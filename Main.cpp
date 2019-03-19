@@ -14,7 +14,7 @@
 // namespaces
 using namespace std;
 
-// define the screen resolution
+// define the screen resolution, position
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 #define WINDOW_POS_LEFT 100
@@ -25,6 +25,8 @@ using namespace std;
 // include the Direct3D Library files
 #pragma comment (lib, "d3d9.lib")
 #pragma comment (lib, "d3dx9.lib")
+
+bool game_over = FALSE;
 
 // world size (map)
 float map_width = 128.0f;
@@ -252,7 +254,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	MSG msg;
 
-	while (TRUE)
+	while (!game_over)
 	{
 		kezdet = win_time.wMilliseconds;
 		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -268,12 +270,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		{
 		case WM_KEYDOWN:
 			switch (msg.wParam) {
-			case VK_UP: if (cam_y < map_height) { cam_y = cam_y + 1; look_y = look_y + 1; } break;
-			case VK_DOWN: if (cam_y > 0) { cam_y = cam_y - 1; look_y = look_y - 1; } break;
-			case VK_RIGHT: if (cam_x < map_width) { cam_x = cam_x + 1; look_x = look_x + 1; } break;
-			case VK_LEFT: if (cam_x > 0) { cam_x = cam_x - 1; look_x = look_x - 1; } break;
-			case VK_PRIOR: if (cam_z < -25) { cam_z = cam_z + 1; look_z = look_z + 1; } break;
-			case VK_NEXT: if (cam_z > -40) { cam_z = cam_z - 1; look_z = look_z - 1; } break;
+			case VK_UP:		if (cam_y < map_height) { cam_y = cam_y + 1; look_y = look_y + 1; } break;
+			case VK_DOWN:	if (cam_y > 0) { cam_y = cam_y - 1; look_y = look_y - 1; }			break;
+			case VK_RIGHT:	if (cam_x < map_width) { cam_x = cam_x + 1; look_x = look_x + 1; }	break;
+			case VK_LEFT:	if (cam_x > 0) { cam_x = cam_x - 1; look_x = look_x - 1; }			break;
+			case VK_PRIOR:	if (cam_z < -25) { cam_z = cam_z + 1; look_z = look_z + 1; }		break;
+			case VK_NEXT:	if (cam_z > -40) { cam_z = cam_z - 1; look_z = look_z - 1; }		break;
 			default: break;
 			}
 		default: break;
@@ -287,7 +289,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		frames++;
 		vege = win_time.wMilliseconds;
 		eltelt = vege - kezdet;
-		if (eltelt > 0 && frames % 10 == 0 ) { the_fps = 1000 / eltelt; }
+		if (eltelt > 0 && frames % 10 == 0) { the_fps = 1000 / eltelt; frames = 0; }
 	}
 
 	cleanD3D();
@@ -387,7 +389,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					int msgboxID = MessageBox(NULL, "Exit Program?", "EXIT?", MB_ICONQUESTION | MB_YESNO);
 						switch (msgboxID)
 						{
-						case IDYES: PostQuitMessage(0);  break;
+						case IDYES: game_over = TRUE; PostQuitMessage(0);  break;
 						case IDNO: break;
 						} break;
 			}
@@ -465,14 +467,14 @@ void initD3D(HWND hWnd)
 	texture6 = NULL;
 	texture7 = NULL;
 	texture8 = NULL;
-	HRESULT hr3 = D3DXCreateTextureFromFile(d3ddev, "back1.bmp", &texture1);
-	HRESULT hr4 = D3DXCreateTextureFromFile(d3ddev, "back2.bmp", &texture2);
-	HRESULT hr5 = D3DXCreateTextureFromFile(d3ddev, "menu1.png", &texture3);
-	HRESULT hr6 = D3DXCreateTextureFromFile(d3ddev, "csillag.png", &texture4);
-	HRESULT hr7 = D3DXCreateTextureFromFile(d3ddev, "csillag2.png", &texture5);
-	HRESULT hr8 = D3DXCreateTextureFromFile(d3ddev, "flotta1a.png", &texture6);
-	HRESULT hr9 = D3DXCreateTextureFromFile(d3ddev, "flotta1b.png", &texture7);
-	HRESULT hr16 = D3DXCreateTextureFromFile(d3ddev, "menu2.png", &texture8);
+	HRESULT hr3 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back1.bmp", &texture1);
+	HRESULT hr4 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back2.bmp", &texture2);
+	HRESULT hr5 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu1.png", &texture3);
+	HRESULT hr6 = D3DXCreateTextureFromFile(d3ddev, "Pictures/csillag.png", &texture4);
+	HRESULT hr7 = D3DXCreateTextureFromFile(d3ddev, "Pictures/csillag2.png", &texture5);
+	HRESULT hr8 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1a.png", &texture6);
+	HRESULT hr9 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1b.png", &texture7);
+	HRESULT hr16 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu2.png", &texture8);
 
 	HRESULT hr10 = D3DXCreateSprite(d3ddev, &sprite1);
 
@@ -826,7 +828,7 @@ void flotta()
 
 void get_time()
 {
-	while (TRUE) 
+	while (!game_over) 
 	{ 
 		Sleep(30000);
 		evszam++;
