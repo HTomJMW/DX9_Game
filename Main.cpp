@@ -54,14 +54,12 @@ int clickyPos;
 // declaration of money
 int penz = 7000;
 ID3DXFont *cash;
-RECT cash_rect1;
-RECT cash_rect2;
+RECT cash_rect;
 
 // declaration of gametime
 int evszam = 2860;
-ID3DXFont *game_time;
-RECT game_time_rect1;
-RECT game_time_rect2;
+ID3DXFont *gametime;
+RECT game_time_rect;
 
 // declaration of flotta informations
 int hajok_szama;
@@ -128,7 +126,6 @@ ID3DXFont *fps;
 RECT fps_rectangle;
 int kezdet = 0;
 int vege = 0;
-int eltelt = 0;
 int frames = 0;
 int the_fps = 0;
 
@@ -164,12 +161,6 @@ D3DXVECTOR3 map_j_also = D3DXVECTOR3(256.0f, 0.0f, 0.0f);
 float pU = 0;
 float pV = 0;
 
-// global declatation of move
-float indulX;
-float indulY;
-float celX;
-float celY;
-
 // global declaration of collision triangles (for pick)
 D3DXVECTOR3 b_also;
 D3DXVECTOR3 b_felso;
@@ -188,14 +179,13 @@ void initD3D(HWND hWnd);
 void render_frame(void);
 void cleanD3D(void);
 void init_graphics(void);
-void update_time();
+void time_now();
 void create_stars();
 Ray CalcPickingRay(LPDIRECT3DDEVICE9 Device, int, int);
 void TransformRay(Ray* ray, D3DXMATRIX* T);
-void get_time();
+void game_time();
 void update_flotta1pos();
 void mozog();
-void rendszerek();
 void flotta();
 void capture();
 
@@ -247,7 +237,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	create_stars();
 
 	// create gametime counter
-	thread szal0(get_time);
+	thread szal0(game_time);
 	szal0.detach();
 
 	// enter the main loop:
@@ -256,7 +246,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	while (!game_over)
 	{
-		kezdet = win_time.wMilliseconds;
+		if (frames % 10 == 0) { kezdet = win_time.wMilliseconds; }
 		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
@@ -284,12 +274,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		capture();
 		flotta();
 		update_flotta1pos();
-		update_time();
+		time_now();
 		render_frame();
+		if (frames % 10 == 0) { vege = win_time.wMilliseconds; }
+		if ((vege - kezdet) > 0 && frames % 10 == 0) { the_fps = 1000 / (vege - kezdet); frames = 0; }
 		frames++;
-		vege = win_time.wMilliseconds;
-		eltelt = vege - kezdet;
-		if (eltelt > 0 && frames % 10 == 0) { the_fps = 1000 / eltelt; frames = 0; }
 	}
 
 	cleanD3D();
@@ -340,7 +329,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					csillag_index = i;
 				}
 			}
-			if (csillag_kivalaszt) { rendszerek(); } else { if (!kivalaszt) { name = ""; } else { name = "Flotta"; } }
+			if (csillag_kivalaszt) { name = names[csillag_index]; } else { if (!kivalaszt) { name = ""; } else { name = "Flotta"; } }
 			return 0;
 		} break;
 		case WM_RBUTTONDOWN:
@@ -482,18 +471,14 @@ void initD3D(HWND hWnd)
 	SetRect(&rendsz_rect, 10, 110, 200, 140);
 
 	HRESULT hr12 = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &flottainfo);
-	SetRect(&flottainfo_rect1, 10, 140, 100, 170);
-	SetRect(&flottainfo_rect2, 100, 140, 250, 170);
-	SetRect(&flottainfo_rect3, 10, 170, 100, 200);
-	SetRect(&flottainfo_rect4, 100, 170, 250, 200);
+	SetRect(&flottainfo_rect1, 10, 140, 250, 170);
+	SetRect(&flottainfo_rect2, 10, 170, 250, 200);
 
 	HRESULT hr13 = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &cash);
-	SetRect(&cash_rect1, 10, 200, 100, 230);
-	SetRect(&cash_rect2, 100, 200, 250, 230);
+	SetRect(&cash_rect, 10, 200, 250, 230);
 
-	HRESULT hr14 = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &game_time);
-	SetRect(&game_time_rect1, 10, 230, 100, 260);
-	SetRect(&game_time_rect2, 100, 230, 250, 260);
+	HRESULT hr14 = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &gametime);
+	SetRect(&game_time_rect, 10, 230, 250, 260);
 
 	HRESULT hr15 = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &esemenynaplo);
 	SetRect(&esemenynaplo_rect, SCREEN_WIDTH / 2 - 300, 10, SCREEN_WIDTH / 2 + 300, 100);
@@ -579,27 +564,26 @@ void render_frame(void)
 	font->DrawTextA(NULL, author.c_str(), -1, &author_rectangle, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 	time1->DrawTextA(NULL, current_time.c_str(), -1, &time_rectangle, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 	fps->DrawTextA(NULL, (to_string(the_fps) + " FPS").c_str(), -1, &fps_rectangle, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-	
 	rendsz->DrawTextA(NULL, name.c_str(), -1, &rendsz_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
 	if (kivalaszt) {
-		flottainfo->DrawTextA(NULL, "Ships: ", -1, &flottainfo_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, to_string(hajok_szama).c_str(), -1, &flottainfo_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, "Crew: ", -1, &flottainfo_rect3, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, to_string(legenyseg_szama).c_str(), -1, &flottainfo_rect4, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+		string _hajok = "Ships: " + to_string(hajok_szama);
+		flottainfo->DrawTextA(NULL, _hajok.c_str(), -1, &flottainfo_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+		string _legenyseg = "Crew: " + to_string(legenyseg_szama);
+		flottainfo->DrawTextA(NULL, _legenyseg.c_str(), -1, &flottainfo_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 	}
 	if (csillag_kivalaszt) {
-		flottainfo->DrawTextA(NULL, "Empire: ", -1, &flottainfo_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, owner[csillag_index].c_str(), -1, &flottainfo_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, "Planets: ", -1, &flottainfo_rect3, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-		flottainfo->DrawTextA(NULL, to_string(planets[csillag_index]).c_str(), -1, &flottainfo_rect4, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+		string _birodalom = "Empire: " + owner[csillag_index];
+		flottainfo->DrawTextA(NULL, _birodalom.c_str(), -1, &flottainfo_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+		string _rendszer = "Planets: " + to_string(planets[csillag_index]);
+		flottainfo->DrawTextA(NULL, _rendszer.c_str(), -1, &flottainfo_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 	}
 
-	cash->DrawTextA(NULL, "Cash: ", -1, &cash_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-	cash->DrawTextA(NULL, to_string(penz).c_str(), -1, &cash_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+	string _cash = "Cash: " + to_string(penz);
+	cash->DrawTextA(NULL, _cash.c_str(), -1, &cash_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
-	game_time-> DrawTextA(NULL, "Year: ", -1, &game_time_rect1, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
-	game_time->DrawTextA(NULL, to_string(evszam).c_str(), -1, &game_time_rect2, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+	string _gametime = "Year: " + to_string(evszam);
+	gametime-> DrawTextA(NULL, _gametime.c_str(), -1, &game_time_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
 	esemenynaplo->DrawTextA(NULL, esemeny.c_str(), -1, &esemenynaplo_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
@@ -622,7 +606,7 @@ void cleanD3D(void)
 	rendsz->Release();
 	flottainfo->Release();
 	cash->Release();
-	game_time->Release();
+	gametime->Release();
 	esemenynaplo->Release();
 }
 
@@ -700,20 +684,20 @@ void init_graphics(void)
 	v_buffer->Unlock();
 }
 
-// function for show current time
-void update_time()
+// functions
+void time_now()
 {
 	GetLocalTime(&win_time);
-	int ora = win_time.wHour;
-	int perc = win_time.wMinute;
-	int masodperc = win_time.wSecond;
-	string h = to_string(ora);
-	string m = to_string(perc);
-	string s = to_string(masodperc);
-	if (ora < 10) { h = "0" + h; }
-	if (perc < 10) { m = "0" + m; }
-	if (masodperc < 10) { s = "0" + s; }
-	current_time = h + ":" + m + ":" + s;
+	int _ora = win_time.wHour;
+	int _perc = win_time.wMinute;
+	int _masodperc = win_time.wSecond;
+	string _h = to_string(_ora);
+	string _m = to_string(_perc);
+	string _s = to_string(_masodperc);
+	if (_ora < 10) { _h = "0" + _h; }
+	if (_perc < 10) { _m = "0" + _m; }
+	if (_masodperc < 10) { _s = "0" + _s; }
+	current_time = _h + ":" + _m + ":" + _s;
 }
 
 void create_stars()
@@ -775,7 +759,7 @@ void TransformRay(Ray* ray, D3DXMATRIX* invertViewMatrix)
 	D3DXVec3Normalize(&ray->_direction, &ray->_direction);
 }
 
-void update_flotta1pos() 
+void update_flotta1pos() // picking triangles
 {
 	b_also = D3DXVECTOR3(flotta1xPos - 1.0f, flotta1yPos -1.0f, 0.0f);
 	b_felso = D3DXVECTOR3(flotta1xPos -1.0f, flotta1yPos + 1.0f, 0.0f);
@@ -785,39 +769,33 @@ void update_flotta1pos()
 
 void mozog()
 {
-	indulX = flotta1xPos;
-	indulY = flotta1yPos;
+	float _indulX = flotta1xPos;
+	float _indulY = flotta1yPos;
 
-	celX = map_width * (pV * 2);
-	celY = map_height * (pU * 2);
+	float _celX = map_width * (pV * 2);
+	float _celY = map_height * (pU * 2);
 
 	int alvasido = 5; // ms ... 0.005s
 
 	float speed = 4.0f;
-	float egesz_utX = abs(celX - indulX);
-	float egesz_utY = abs(celY - indulY);
+	float egesz_utX = abs(_celX - _indulX);
+	float egesz_utY = abs(_celY - _indulY);
 	float utX = speed * ((egesz_utX / speed) / 200); // 1s/0.005s = 200
 	float utY = speed * ((egesz_utY / speed) / 200);
 
-
 	while (rmb && (flotta1xPos > 0 && flotta1yPos > 0) && (flotta1xPos < map_width && flotta1yPos < map_height))
 		{
-		if (flotta1xPos < (celX + utX) && flotta1xPos > (celX - utX)) { flotta1xPos = celX; }
-		if (flotta1yPos < (celY + utY) && flotta1yPos > (celY - utY)) { flotta1yPos = celY; }
-		if (flotta1xPos == celX && flotta1yPos == celY) { rmb = FALSE; break; }
-		if (celX - flotta1xPos > 0) { flotta1xPos = flotta1xPos + utX; }
-		if (celX - flotta1xPos < 0) { flotta1xPos = flotta1xPos - utX; }
-		if (celY - flotta1yPos > 0) { flotta1yPos = flotta1yPos + utY; }
-		if (celY - flotta1yPos < 0) { flotta1yPos = flotta1yPos - utY; }
+		if (flotta1xPos < (_celX + utX) && flotta1xPos > (_celX - utX)) { flotta1xPos = _celX; }
+		if (flotta1yPos < (_celY + utY) && flotta1yPos > (_celY - utY)) { flotta1yPos = _celY; }
+		if (flotta1xPos == _celX && flotta1yPos == _celY) { rmb = FALSE; break; }
+		if (_celX - flotta1xPos > 0) { flotta1xPos = flotta1xPos + utX; }
+		if (_celX - flotta1xPos < 0) { flotta1xPos = flotta1xPos - utX; }
+		if (_celY - flotta1yPos > 0) { flotta1yPos = flotta1yPos + utY; }
+		if (_celY - flotta1yPos < 0) { flotta1yPos = flotta1yPos - utY; }
 		Sleep(alvasido);
 		}
 
 	return;
-}
-
-void rendszerek()
-{
-	name = names[csillag_index];
 }
 
 void flotta()
@@ -826,7 +804,7 @@ void flotta()
 	legenyseg_szama = 40 * hajok_szama;
 }
 
-void get_time()
+void game_time()
 {
 	while (!game_over) 
 	{ 
