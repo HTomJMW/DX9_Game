@@ -5,7 +5,6 @@
 #include <dsound.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <mmsystem.h>
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <string>
@@ -27,6 +26,7 @@ using namespace std;
 #pragma comment (lib, "d3dx9.lib")
 
 bool game_over = FALSE;
+bool game_pause = FALSE;
 
 // world size (map)
 float map_width = 128.0f;
@@ -62,8 +62,8 @@ ID3DXFont *gametime;
 RECT game_time_rect;
 
 // declaration of flotta informations
-int hajok_szama;
-int legenyseg_szama;
+int hajok_szama = 1;
+int legenyseg_szama = 40;
 
 // declaration of system owners
 string owner[30];
@@ -111,6 +111,7 @@ LPDIRECT3DVERTEXBUFFER9 v_buffer = NULL;
 // global declaration of time
 SYSTEMTIME win_time;
 
+
 // global declaration of Text
 ID3DXFont *font;
 RECT author_rectangle;
@@ -124,8 +125,6 @@ string current_time;
 // global declaration of text (FPS)
 ID3DXFont *fps;
 RECT fps_rectangle;
-int kezdet = 0;
-int vege = 0;
 int frames = 0;
 int the_fps = 0;
 
@@ -137,8 +136,6 @@ RECT rendsz_rect;
 ID3DXFont *flottainfo;
 RECT flottainfo_rect1;
 RECT flottainfo_rect2;
-RECT flottainfo_rect3;
-RECT flottainfo_rect4;
 
 // global declaration of Texture
 IDirect3DTexture9 *texture1;
@@ -179,7 +176,7 @@ void initD3D(HWND hWnd);
 void render_frame(void);
 void cleanD3D(void);
 void init_graphics(void);
-void time_now();
+string time_now();
 void create_stars();
 Ray CalcPickingRay(LPDIRECT3DDEVICE9 Device, int, int);
 void TransformRay(Ray* ray, D3DXMATRIX* T);
@@ -243,10 +240,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// enter the main loop:
 
 	MSG msg;
-
+	
 	while (!game_over)
 	{
-		if (frames % 10 == 0) { kezdet = win_time.wMilliseconds; }
+		GetLocalTime(&win_time);
+		int _kezdet = win_time.wMilliseconds;
 		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
@@ -270,14 +268,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			}
 		default: break;
 		}
-
 		capture();
 		flotta();
 		update_flotta1pos();
 		time_now();
 		render_frame();
-		if (frames % 10 == 0) { vege = win_time.wMilliseconds; }
-		if ((vege - kezdet) > 0 && frames % 10 == 0) { the_fps = 1000 / (vege - kezdet); frames = 0; }
+		GetLocalTime(&win_time);
+		int _vege = win_time.wMilliseconds;
+		if ((_vege - _kezdet) > 0 && frames % 10 == 0) { the_fps = 1000 / (_vege - _kezdet); frames = 0; }
 		frames++;
 	}
 
@@ -374,6 +372,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			switch (wParam)
 			{
+			case VK_PAUSE: case VK_SPACE:
+				if (!game_pause) { game_pause = TRUE; esemeny = "PAUSED"; } else { game_pause = FALSE; esemeny = ""; } break;
 				case VK_ESCAPE:
 					int msgboxID = MessageBox(NULL, "Exit Program?", "EXIT?", MB_ICONQUESTION | MB_YESNO);
 						switch (msgboxID)
@@ -685,9 +685,8 @@ void init_graphics(void)
 }
 
 // functions
-void time_now()
+string time_now()
 {
-	GetLocalTime(&win_time);
 	int _ora = win_time.wHour;
 	int _perc = win_time.wMinute;
 	int _masodperc = win_time.wSecond;
@@ -697,7 +696,7 @@ void time_now()
 	if (_ora < 10) { _h = "0" + _h; }
 	if (_perc < 10) { _m = "0" + _m; }
 	if (_masodperc < 10) { _s = "0" + _s; }
-	current_time = _h + ":" + _m + ":" + _s;
+	return current_time = _h + ":" + _m + ":" + _s;
 }
 
 void create_stars()
@@ -785,14 +784,17 @@ void mozog()
 
 	while (rmb && (flotta1xPos > 0 && flotta1yPos > 0) && (flotta1xPos < map_width && flotta1yPos < map_height))
 		{
-		if (flotta1xPos < (_celX + utX) && flotta1xPos > (_celX - utX)) { flotta1xPos = _celX; }
-		if (flotta1yPos < (_celY + utY) && flotta1yPos > (_celY - utY)) { flotta1yPos = _celY; }
-		if (flotta1xPos == _celX && flotta1yPos == _celY) { rmb = FALSE; break; }
-		if (_celX - flotta1xPos > 0) { flotta1xPos = flotta1xPos + utX; }
-		if (_celX - flotta1xPos < 0) { flotta1xPos = flotta1xPos - utX; }
-		if (_celY - flotta1yPos > 0) { flotta1yPos = flotta1yPos + utY; }
-		if (_celY - flotta1yPos < 0) { flotta1yPos = flotta1yPos - utY; }
-		Sleep(alvasido);
+			if (!game_pause)
+			{
+				if (flotta1xPos < (_celX + utX) && flotta1xPos >(_celX - utX)) { flotta1xPos = _celX; }
+				if (flotta1yPos < (_celY + utY) && flotta1yPos >(_celY - utY)) { flotta1yPos = _celY; }
+				if (flotta1xPos == _celX && flotta1yPos == _celY) { rmb = FALSE; break; }
+				if (_celX - flotta1xPos > 0) { flotta1xPos = flotta1xPos + utX; }
+				if (_celX - flotta1xPos < 0) { flotta1xPos = flotta1xPos - utX; }
+				if (_celY - flotta1yPos > 0) { flotta1yPos = flotta1yPos + utY; }
+				if (_celY - flotta1yPos < 0) { flotta1yPos = flotta1yPos - utY; }
+				Sleep(alvasido);
+			}
 		}
 
 	return;
@@ -807,16 +809,19 @@ void flotta()
 void game_time()
 {
 	while (!game_over) 
-	{ 
-		Sleep(30000);
-		evszam++;
-		for (int i = 0; i < 30; i++)
+	{
+		if (!game_pause)
 		{
-			if (owner[i] == player) { system_count++; }
+			Sleep(30000);
+			evszam++;
+			for (int i = 0; i < 30; i++)
+			{
+				if (owner[i] == player) { system_count++; }
+			}
+			esemeny = "New Year: " + to_string(evszam) + ", Tax revenue: " + to_string(system_count * 200) + " credit";
+			penz = penz + system_count * 200;
+			system_count = 0;
 		}
-		esemeny = "New Year: " + to_string(evszam) + ", Tax income: " + to_string(system_count * 200) + " credit";
-		penz = penz +  system_count * 200;
-		system_count = 0;
 	}
 }
 
