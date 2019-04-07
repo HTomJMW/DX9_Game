@@ -2,13 +2,14 @@
 #include <tchar.h>
 #include <iostream>
 #include <cstdlib>
-#include <dsound.h>
+//#include <dsound.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <d3d9.h>
+//#include <d3d9.h>
 #include <d3dx9.h>
 #include <string>
 #include <thread>
+#include "clock.cpp"
 
 // namespaces
 using namespace std;
@@ -53,6 +54,7 @@ int clickyPos;
 
 // declaration of money
 int penz = 7000;
+int ai_penz = 7000;
 ID3DXFont *cash;
 RECT cash_rect;
 
@@ -64,6 +66,8 @@ RECT game_time_rect;
 // declaration of flotta informations
 int hajok_szama = 1;
 int legenyseg_szama = 40;
+int nmy_hajok_szama = 1;
+int nmy_legenyseg_szama = 40;
 
 // declaration of system owners
 string owner[30];
@@ -100,6 +104,8 @@ RECT esemenynaplo_rect;
 // global declaration of flotta1pos (central of map)
 float flotta1xPos = (map_width / 2);
 float flotta1yPos = (map_height / 2);
+float nmy_flottaxPos = (map_width / 3);
+float nmy_flottayPos = (map_height / 3);
 bool kivalaszt = FALSE;
 bool rmb = FALSE;
 
@@ -110,7 +116,6 @@ LPDIRECT3DVERTEXBUFFER9 v_buffer = NULL;
 
 // global declaration of time
 SYSTEMTIME win_time;
-
 
 // global declaration of Text
 ID3DXFont *font;
@@ -146,6 +151,8 @@ IDirect3DTexture9 *texture5;
 IDirect3DTexture9 *texture6;
 IDirect3DTexture9 *texture7;
 IDirect3DTexture9 *texture8;
+IDirect3DTexture9 *texture9;
+IDirect3DTexture9 *texture10;
 
 // global declaration of Sprite (menu)
 ID3DXSprite *sprite1;
@@ -159,10 +166,16 @@ float pU = 0;
 float pV = 0;
 
 // global declaration of collision triangles (for pick)
+// player flotta
 D3DXVECTOR3 b_also;
 D3DXVECTOR3 b_felso;
 D3DXVECTOR3 j_felso;
 D3DXVECTOR3 j_also;
+// ai flotta
+D3DXVECTOR3 ai_b_also;
+D3DXVECTOR3 ai_b_felso;
+D3DXVECTOR3 ai_j_felso;
+D3DXVECTOR3 ai_j_also;
 
 // struct of Ray
 struct Ray
@@ -176,15 +189,16 @@ void initD3D(HWND hWnd);
 void render_frame(void);
 void cleanD3D(void);
 void init_graphics(void);
-string time_now();
 void create_stars();
 Ray CalcPickingRay(LPDIRECT3DDEVICE9 Device, int, int);
 void TransformRay(Ray* ray, D3DXMATRIX* T);
 void game_time();
-void update_flotta1pos();
+void update_flottapos();
 void mozog();
 void flotta();
 void capture();
+void gep();
+void move_ai();
 
 // change VertexFormat to textured
 struct CUSTOMVERTEX
@@ -230,12 +244,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	// set up and initialize Direct3D
 	initD3D(hWnd);
 
+	// classes
+	Clock oraobj;
+
 	// create stars
 	create_stars();
 
 	// create gametime counter
 	thread szal0(game_time);
 	szal0.detach();
+
+	// start ai
+	gep();
 
 	// enter the main loop:
 
@@ -270,8 +290,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		}
 		capture();
 		flotta();
-		update_flotta1pos();
-		time_now();
+		update_flottapos();
+		current_time = oraobj.time_now();
 		render_frame();
 		GetLocalTime(&win_time);
 		int _vege = win_time.wMilliseconds;
@@ -456,6 +476,8 @@ void initD3D(HWND hWnd)
 	texture6 = NULL;
 	texture7 = NULL;
 	texture8 = NULL;
+	texture9 = NULL;
+	texture10 = NULL;
 	HRESULT hr3 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back1.bmp", &texture1);
 	HRESULT hr4 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back2.bmp", &texture2);
 	HRESULT hr5 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu1.png", &texture3);
@@ -464,6 +486,8 @@ void initD3D(HWND hWnd)
 	HRESULT hr8 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1a.png", &texture6);
 	HRESULT hr9 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1b.png", &texture7);
 	HRESULT hr16 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu2.png", &texture8);
+	HRESULT hr17 = D3DXCreateTextureFromFile(d3ddev, "Pictures/nmy_flotta_a.png", &texture9);;
+	HRESULT hr18 = D3DXCreateTextureFromFile(d3ddev, "Pictures/nmy_flotta_b.png", &texture10);;
 
 	HRESULT hr10 = D3DXCreateSprite(d3ddev, &sprite1);
 
@@ -541,6 +565,14 @@ void render_frame(void)
 		d3ddev->SetTexture(0, NULL);
 		d3ddev->DrawPrimitive(D3DPT_POINTLIST, 18, 18);
 	}
+
+	// draw enemy flotta
+	D3DXMatrixTranslation(&matTranslate, nmy_flottaxPos, nmy_flottayPos, 0.0f);
+	d3ddev->SetTransform(D3DTS_WORLD, &(matTranslate));
+	d3ddev->SetTexture(0, texture9);
+	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 12, 1);
+	d3ddev->SetTexture(0, texture10);
+	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 15, 1);
 
 	// draw flotta1
 	D3DXMatrixTranslation(&matTranslate, flotta1xPos, flotta1yPos, 0.0f);
@@ -685,20 +717,6 @@ void init_graphics(void)
 }
 
 // functions
-string time_now()
-{
-	int _ora = win_time.wHour;
-	int _perc = win_time.wMinute;
-	int _masodperc = win_time.wSecond;
-	string _h = to_string(_ora);
-	string _m = to_string(_perc);
-	string _s = to_string(_masodperc);
-	if (_ora < 10) { _h = "0" + _h; }
-	if (_perc < 10) { _m = "0" + _m; }
-	if (_masodperc < 10) { _s = "0" + _s; }
-	return current_time = _h + ":" + _m + ":" + _s;
-}
-
 void create_stars()
 {
 	// fill up random star positions
@@ -758,12 +776,19 @@ void TransformRay(Ray* ray, D3DXMATRIX* invertViewMatrix)
 	D3DXVec3Normalize(&ray->_direction, &ray->_direction);
 }
 
-void update_flotta1pos() // picking triangles
+void update_flottapos() // picking triangles
 {
+	// Player flotta
 	b_also = D3DXVECTOR3(flotta1xPos - 1.0f, flotta1yPos -1.0f, 0.0f);
 	b_felso = D3DXVECTOR3(flotta1xPos -1.0f, flotta1yPos + 1.0f, 0.0f);
 	j_felso = D3DXVECTOR3(flotta1xPos + 1.0f, flotta1yPos + 1.0f, 0.0f);
 	j_also = D3DXVECTOR3(flotta1xPos + 1.0f, flotta1yPos - 1.0f, 0.0f);
+
+	// AI flotta
+	ai_b_also = D3DXVECTOR3(nmy_flottaxPos - 1.0f, nmy_flottayPos - 1.0f, 0.0f);
+	ai_b_felso = D3DXVECTOR3(nmy_flottaxPos - 1.0f, nmy_flottayPos + 1.0f, 0.0f);
+	ai_j_felso = D3DXVECTOR3(nmy_flottaxPos + 1.0f, nmy_flottayPos + 1.0f, 0.0f);
+	ai_j_also = D3DXVECTOR3(nmy_flottaxPos + 1.0f, nmy_flottayPos - 1.0f, 0.0f);
 }
 
 void mozog()
@@ -804,6 +829,9 @@ void flotta()
 {
 	hajok_szama = 1;
 	legenyseg_szama = 40 * hajok_szama;
+
+	nmy_hajok_szama = 1;
+	nmy_legenyseg_szama = 40 * nmy_hajok_szama;
 }
 
 void game_time()
@@ -834,6 +862,31 @@ void capture()
 			owner[i] = player;
 			penz = penz + 500;
 			esemeny = names[i] + " :: System captured... Reward: 500 credit";
+		}
+		if ((starsX[i] < nmy_flottaxPos + 3.0f && starsX[i] > nmy_flottaxPos - 3.0f) && (starsY[i] < nmy_flottayPos + 3.0f && starsY[i] > nmy_flottayPos - 3.0f) && owner[i] != ai)
+		{
+			owner[i] = ai;
+			ai_penz = ai_penz + 500;
+			esemeny = names[i] + " :: System captured by AI...";
+		}
+	}
+}
+
+void gep()
+{
+	thread szal2(move_ai);
+	szal2.detach();
+}
+
+void move_ai()
+{
+	while ((nmy_flottaxPos > 0 && nmy_flottayPos > 0) && (nmy_flottaxPos < map_width && nmy_flottayPos < map_height))
+	{
+		if (!game_pause)
+		{
+			nmy_flottaxPos = nmy_flottaxPos + 0.005f;
+			nmy_flottayPos = nmy_flottayPos + 0.005f;
+			Sleep(5);
 		}
 	}
 }
