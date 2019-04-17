@@ -1,14 +1,15 @@
 // include the basic windows header files, Direct3D header files, ect...
 #include <tchar.h>
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
-//#include <dsound.h>
 #include <windows.h>
 #include <windowsx.h>
-//#include <d3d9.h>
+#include <d3d9.h>
 #include <d3dx9.h>
 #include <string>
 #include <thread>
+//#include <dsound.h>
 #include "clock.cpp"
 
 // namespaces
@@ -28,6 +29,7 @@ using namespace std;
 
 bool game_over = FALSE;
 bool game_pause = FALSE;
+bool stop_thread = FALSE;
 
 // world size (map)
 float map_width = 128.0f;
@@ -144,15 +146,11 @@ RECT flottainfo_rect2;
 
 // global declaration of Texture
 IDirect3DTexture9 *texture1;
-IDirect3DTexture9 *texture2;
 IDirect3DTexture9 *texture3;
 IDirect3DTexture9 *texture4;
-IDirect3DTexture9 *texture5;
 IDirect3DTexture9 *texture6;
-IDirect3DTexture9 *texture7;
 IDirect3DTexture9 *texture8;
 IDirect3DTexture9 *texture9;
-IDirect3DTexture9 *texture10;
 
 // global declaration of Sprite (menu)
 ID3DXSprite *sprite1;
@@ -199,6 +197,10 @@ void flotta();
 void capture();
 void gep();
 void move_ai();
+void gyartas();
+void rendszer();
+void save();
+void load();
 
 // change VertexFormat to textured
 struct CUSTOMVERTEX
@@ -352,6 +354,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		} break;
 		case WM_RBUTTONDOWN:
 		{
+			stop_thread = FALSE;
 			if (kivalaszt) 
 			{
 			csillag_kivalaszt = FALSE;
@@ -392,8 +395,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			switch (wParam)
 			{
-			case VK_PAUSE: case VK_SPACE:
-				if (!game_pause) { game_pause = TRUE; esemeny = "PAUSED"; } else { game_pause = FALSE; esemeny = ""; } break;
+				case VK_PAUSE: case VK_SPACE:
+					if (!game_pause) { game_pause = TRUE; esemeny = "PAUSED"; } else { game_pause = FALSE; esemeny = ""; } break;
+				case VK_F6: save(); esemeny = "Save"; break;
+				case VK_F7: load(); esemeny = "Load"; stop_thread = TRUE; break;
 				case VK_ESCAPE:
 					int msgboxID = MessageBox(NULL, "Exit Program?", "EXIT?", MB_ICONQUESTION | MB_YESNO);
 						switch (msgboxID)
@@ -469,25 +474,17 @@ void initD3D(HWND hWnd)
 	SetRect(&fps_rectangle, 10, 80, 200, 110);
 
 	texture1 = NULL;
-	texture2 = NULL;
 	texture3 = NULL;
 	texture4 = NULL;
-	texture5 = NULL;
 	texture6 = NULL;
-	texture7 = NULL;
 	texture8 = NULL;
 	texture9 = NULL;
-	texture10 = NULL;
-	HRESULT hr3 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back1.bmp", &texture1);
-	HRESULT hr4 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back2.bmp", &texture2);
+	HRESULT hr3 = D3DXCreateTextureFromFile(d3ddev, "Pictures/back.bmp", &texture1);
 	HRESULT hr5 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu1.png", &texture3);
 	HRESULT hr6 = D3DXCreateTextureFromFile(d3ddev, "Pictures/csillag.png", &texture4);
-	HRESULT hr7 = D3DXCreateTextureFromFile(d3ddev, "Pictures/csillag2.png", &texture5);
-	HRESULT hr8 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1a.png", &texture6);
-	HRESULT hr9 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1b.png", &texture7);
+	HRESULT hr8 = D3DXCreateTextureFromFile(d3ddev, "Pictures/flotta1.png", &texture6);
 	HRESULT hr16 = D3DXCreateTextureFromFile(d3ddev, "Pictures/menu2.png", &texture8);
-	HRESULT hr17 = D3DXCreateTextureFromFile(d3ddev, "Pictures/nmy_flotta_a.png", &texture9);;
-	HRESULT hr18 = D3DXCreateTextureFromFile(d3ddev, "Pictures/nmy_flotta_b.png", &texture10);;
+	HRESULT hr17 = D3DXCreateTextureFromFile(d3ddev, "Pictures/nmy_flotta.png", &texture9);
 
 	HRESULT hr10 = D3DXCreateSprite(d3ddev, &sprite1);
 
@@ -548,8 +545,6 @@ void render_frame(void)
 	d3ddev->SetTexture(0, texture1);
 	// draw the first triangle
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 1);
-
-	d3ddev->SetTexture(0, texture2);
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 3, 1);
 
 	// draw stars and radars
@@ -559,19 +554,17 @@ void render_frame(void)
 		d3ddev->SetTransform(D3DTS_WORLD, &(matTranslate));
 		d3ddev->SetTexture(0, texture4);
 		d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 6, 1);
-		d3ddev->SetTexture(0, texture5);
 		d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 9, 1);
 		d3ddev->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&pointSize));
 		d3ddev->SetTexture(0, NULL);
 		d3ddev->DrawPrimitive(D3DPT_POINTLIST, 18, 18);
 	}
-
+	
 	// draw enemy flotta
 	D3DXMatrixTranslation(&matTranslate, nmy_flottaxPos, nmy_flottayPos, 0.0f);
 	d3ddev->SetTransform(D3DTS_WORLD, &(matTranslate));
 	d3ddev->SetTexture(0, texture9);
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 12, 1);
-	d3ddev->SetTexture(0, texture10);
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 15, 1);
 
 	// draw flotta1
@@ -579,7 +572,6 @@ void render_frame(void)
 	d3ddev->SetTransform(D3DTS_WORLD, &(matTranslate));
 	d3ddev->SetTexture(0, texture6);
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 12, 1);
-	d3ddev->SetTexture(0, texture7);
 	d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 15, 1);
 
 	// sprite (menu)
@@ -615,7 +607,7 @@ void render_frame(void)
 	cash->DrawTextA(NULL, _cash.c_str(), -1, &cash_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
 	string _gametime = "Year: " + to_string(evszam);
-	gametime-> DrawTextA(NULL, _gametime.c_str(), -1, &game_time_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
+	gametime->DrawTextA(NULL, _gametime.c_str(), -1, &game_time_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
 	esemenynaplo->DrawTextA(NULL, esemeny.c_str(), -1, &esemenynaplo_rect, DT_LEFT, D3DCOLOR_XRGB(255, 255, 255));
 
@@ -655,19 +647,19 @@ void init_graphics(void)
 		{ 128.0f, 72.0f, 0.0f, 1.0f, 0.0f },
 
 		// triangle 2 (map)
-		{ 0.0f, 0.0f, 0.0f, 1.0f, 0.0f }, // 3
-		{ 128.0f, 72.0f, 0.0f, 0.0f, 1.0f },
-		{ 128.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 1.0f }, // 3
+		{ 128.0f, 72.0f, 0.0f, 1.0f, 0.0f },
+		{ 128.0f, 0.0f, 0.0f, 1.0f, 1.0f },
 
 		// for stars
-		{ -1.25f, -1.25f, 0.0f, 0.0f, 1.0f }, // 6
-		{ -1.25f, 1.25f, 0.0f, 0.0f, 0.0f },
-		{ 1.25f, 1.25f, 0.0f, 1.0f, 0.0f },
+		{ -3.5f, -3.5f, 0.0f, 0.0f, 1.0f }, // 6
+		{ -3.5f, 3.5f, 0.0f, 0.0f, 0.0f },
+		{ 3.5f, 3.5f, 0.0f, 1.0f, 0.0f },
 
 		// for stars 2
-		{ -1.25f, -1.25f, 0.0f, 1.0f, 0.0f }, // 9
-		{ 1.25f, 1.25f, 0.0f, 0.0f, 1.0f },
-		{ 1.25f, -1.25f, 0.0f, 0.0f, 0.0f },
+		{ -3.5f, -3.5f, 0.0f, 0.0f, 1.0f }, // 9
+		{ 3.5f, 3.5f, 0.0f, 1.0f, 0.0f },
+		{ 3.5f, -3.5f, 0.0f, 1.0f, 1.0f },
 
 		// for flotta1
 		{ -1.0f, -1.0f, 0.0f, 0.0f, 1.0f }, // 12
@@ -675,9 +667,9 @@ void init_graphics(void)
 		{ 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
 
 		// for flotta1 2
-		{ -1.0f, -1.0f, 0.0f, 1.0f, 0.0f }, // 15
-		{ 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
-		{ 1.0f, -1.0f, 0.0f, 0.0f, 0.0f },
+		{ -1.0f, -1.0f, 0.0f, 0.0f, 1.0f }, // 15
+		{ 1.0f, 1.0f, 0.0f, 1.0f, 0.0f },
+		{ 1.0f, -1.0f, 0.0f, 1.0f, 1.0f },
 
 		// pontlist (18 pont // 20 fok)
 		{ 0.0f, 5.0f, 0.0f, 0.0f, 1.0f }, // 18
@@ -719,21 +711,48 @@ void init_graphics(void)
 // functions
 void create_stars()
 {
-	// fill up random star positions
+	// star positions
 	srand((unsigned int)time(NULL));
-	for (int i = 0; i < 30; i++)
-	{
-		starsX[i] = float(int(rand() % 118 + 5));
-		starsY[i] = float(int(rand() % 62 + 5));
-		
-		// for select
-		starPos1[i] = D3DXVECTOR3(starsX[i] - 1.25f, starsY[i] - 1.25f, 0.0f);
-		starPos2[i] = D3DXVECTOR3(starsX[i] - 1.25f, starsY[i] + 1.25f, 0.0f);
-		starPos3[i] = D3DXVECTOR3(starsX[i] + 1.25f, starsY[i] + 1.25f, 0.0f);
-		starPos4[i] = D3DXVECTOR3(starsX[i] + 1.25f, starsY[i] - 1.25f, 0.0f);
+	
+	float x[6] = { map_width / 7, (map_width / 7) * 2, (map_width / 7) * 3, (map_width / 7) * 4, (map_width / 7) * 5, (map_width / 7) * 6 };
+	float y[5] = { map_height / 6, (map_height / 6) * 2, (map_height / 6) * 3, (map_height / 6) * 4, (map_height / 6) * 5 };
 
-		owner[i] = "Not colonized";
-		planets[i] = rand() % 7 + 1;
+	for (int i = 0; i < 6; i++)
+	{
+		starsX[i] = x[i] + rand() % 14 - 7;
+		starsY[i] = y[0] + rand() % 10 - 3;
+	}
+	for (int j = 6; j < 12; j++)
+	{
+		starsX[j] = x[j-6] + rand() % 14 - 7;
+		starsY[j] = y[1] + rand() % 10 - 3;
+	}
+	for (int k = 12; k < 18; k++)
+	{
+		starsX[k] = x[k-12] + rand() % 14 - 7;
+		starsY[k] = y[2] + rand() % 10 - 3;
+	}
+	for (int l = 18; l < 24; l++)
+	{
+		starsX[l] = x[l-18] + rand() % 14 - 7;
+		starsY[l] = y[3] + rand() % 10 - 3;
+	}
+	for (int m = 24; m < 30; m++)
+	{
+		starsX[m] = x[m-24] + rand() % 14 - 7;
+		starsY[m] = y[4] + rand() % 10 - 3;
+	}
+
+	for (int n = 0; n < 30; n++)
+	{
+		// for select
+		starPos1[n] = D3DXVECTOR3(starsX[n] - 1.25f, starsY[n] - 1.25f, 0.0f);
+		starPos2[n] = D3DXVECTOR3(starsX[n] - 1.25f, starsY[n] + 1.25f, 0.0f);
+		starPos3[n] = D3DXVECTOR3(starsX[n] + 1.25f, starsY[n] + 1.25f, 0.0f);
+		starPos4[n] = D3DXVECTOR3(starsX[n] + 1.25f, starsY[n] - 1.25f, 0.0f);
+
+		owner[n] = "Not colonized";
+		planets[n] = rand() % 7 + 1;
 	}
 }
 
@@ -807,7 +826,7 @@ void mozog()
 	float utX = speed * ((egesz_utX / speed) / 200); // 1s/0.005s = 200
 	float utY = speed * ((egesz_utY / speed) / 200);
 
-	while (rmb && (flotta1xPos > 0 && flotta1yPos > 0) && (flotta1xPos < map_width && flotta1yPos < map_height))
+	while (rmb && (flotta1xPos > 0 && flotta1yPos > 0) && (flotta1xPos < map_width && flotta1yPos < map_height) && !stop_thread)
 		{
 			if (!game_pause)
 			{
@@ -882,11 +901,60 @@ void move_ai()
 {
 	while ((nmy_flottaxPos > 0 && nmy_flottayPos > 0) && (nmy_flottaxPos < map_width && nmy_flottayPos < map_height))
 	{
-		if (!game_pause)
+		if (!game_pause && !stop_thread)
 		{
 			nmy_flottaxPos = nmy_flottaxPos + 0.005f;
 			nmy_flottayPos = nmy_flottayPos + 0.005f;
 			Sleep(5);
 		}
+	}
+}
+
+void gyartas()
+{
+
+}
+
+void rendszer()
+{
+
+}
+
+void save()
+{
+	ofstream savegame;
+	savegame.open("save.sav");
+	savegame << flotta1xPos << endl;
+	savegame << flotta1yPos << endl;
+	savegame << nmy_flottaxPos << endl;
+	savegame << nmy_flottayPos << endl;
+	savegame << penz << endl;
+	savegame << ai_penz << endl;
+	savegame << evszam << endl;
+	savegame.close();
+}
+
+void load()
+{
+	string adat;
+	ifstream loadgame;
+	loadgame.open("save.sav");
+	if (loadgame.is_open())
+	{
+		getline(loadgame, adat);
+		flotta1xPos = stof(adat);
+		getline(loadgame, adat);
+		flotta1yPos = stof(adat);
+		getline(loadgame, adat);
+		nmy_flottaxPos = stof(adat);
+		getline(loadgame, adat);
+		nmy_flottayPos = stof(adat);
+		getline(loadgame, adat);
+		penz = stof(adat);
+		getline(loadgame, adat);
+		ai_penz = stof(adat);
+		getline(loadgame, adat);
+		evszam = stof(adat);
+		loadgame.close();
 	}
 }
