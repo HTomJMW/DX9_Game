@@ -6,13 +6,11 @@ using namespace std;
 class Clock
 {
 	public:
-		SYSTEMTIME t;
-		string time_now()
+		string time_now(SYSTEMTIME win_time)
 		{
-			GetLocalTime(&t);
-			int ora = t.wHour;
-			int perc = t.wMinute;
-			int masodperc = t.wSecond;
+			int ora = win_time.wHour;
+			int perc = win_time.wMinute;
+			int masodperc = win_time.wSecond;
 			string h = to_string(ora);
 			string m = to_string(perc);
 			string s = to_string(masodperc);
