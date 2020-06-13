@@ -88,9 +88,12 @@ HRESULT Hierarchy::CreateMeshContainer(LPCSTR Name, const D3DXMESHDATA *pMeshDat
 	for (UINT i = 0; i < NumMaterials; i++)
 	{
 		LPSTR file_name = pMaterials[i].pTextureFilename;
-		TCHAR dest[40] = _T("Models/");
-		StringCchCat(dest, 40, file_name);
-		D3DXCreateTextureFromFile(pd3dDevice, dest, &pMeshContainer->ppTextures[i]);
+
+		string fn = file_name;
+		string path = "Models/" + fn;
+		LPSTR pPath = const_cast<char*>(path.c_str());
+
+		D3DXCreateTextureFromFile(pd3dDevice, pPath, &pMeshContainer->ppTextures[i]);
 
 		// elfelejteni a fájlnevet betöltés után
 		pMeshContainer->pMaterials[i].pTextureFilename = NULL;

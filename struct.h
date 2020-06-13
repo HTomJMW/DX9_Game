@@ -69,7 +69,7 @@ struct Container : public D3DXMESHCONTAINER
 {
 	LPDIRECT3DTEXTURE9* ppTextures; // textúra tömb
 
-	// SkinMesh infók             
+	// SkinMesh infók
 	LPD3DXMESH pOrigMesh;
 	LPD3DXATTRIBUTERANGE pAttributeTable;
 	DWORD NumAttributeGroups;

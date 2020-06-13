@@ -3,7 +3,12 @@
 #include <d3dx9.h>
 #include <windows.h>
 #include <string>
+#include <vector>
+#include <tchar.h>
+#include <strsafe.h>
 #include "struct.h"
+
+#define PI 3.14159265
 
 using namespace std;
 
@@ -13,7 +18,7 @@ extern float ksz;
 class Bolygok
 {
 	public:
-		Bolygok(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, int _bounding, IDirect3DTexture9 *_texture, LPD3DXMESH _mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, float _r);
+		Bolygok(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, const vector<D3DMATERIAL9> &_mtrls_mesh, const vector<IDirect3DTexture9*> &_textures_mesh, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, float _r);
 		~Bolygok();
 
 		string get_nev() const;
@@ -26,7 +31,6 @@ class Bolygok
 		void set_nepesseg(int _nepesseg);
 		string get_birodalom() const;
 		void set_birodalom(string _birodalom);
-		int get_bounding() const;
 		LPD3DXMESH get_mesh() const;
 		D3DXVECTOR3 get_pos() const;
 		D3DXMATRIX get_transform() const;
@@ -44,7 +48,6 @@ class Bolygok
 		bool _lakhato;
 		int _nepesseg;
 		string _birodalom;
-		int _bounding; // bounding box: 0, bounding sphere: 1
 		bool _kivalaszt;
 
 		D3DXMATRIX _matRotateY;
@@ -57,7 +60,8 @@ class Bolygok
 		D3DXVECTOR3 _pos_2;
 		float _r; // forgási együttható
 
-		IDirect3DTexture9 *_texture;
+		vector<D3DMATERIAL9> _mtrls_mesh;
+		vector<IDirect3DTexture9*> _textures_mesh;
 		LPD3DXMESH _mesh;
 
 		Bsphere _bounding_sphere;

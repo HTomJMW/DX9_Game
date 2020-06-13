@@ -29,6 +29,7 @@ int window_pos_top = 0;
 D3DXCOLOR fekete = D3DCOLOR_XRGB(0, 0, 0);
 D3DXCOLOR feher = D3DCOLOR_XRGB(255, 255, 255);
 D3DXCOLOR sarga = D3DCOLOR_XRGB(255, 255, 0);
+D3DXCOLOR szurke = D3DCOLOR_XRGB(128, 128, 128);
 
 // materials
 D3DMATERIAL9 material;
@@ -43,11 +44,6 @@ int fps = 0;
 
 // eltelt idõ - 1 frame
 int delta = -1;
-int kezdet = 0;
-int vege = 0;
-
-// futási idõ másodpercben
-double futasido = 0.0f;
 
 // világ mérete
 float map_width = 1280.0f;
@@ -92,14 +88,11 @@ int nap = 1;
 // csillagok
 float pointSize = 2.0f;
 
-const int rnd_meret = 500;
+const int rnd_meret = 400;
 D3DXVECTOR3 rnd[rnd_meret];
 
 const int rnd_sprite_meret = 20;
 D3DXVECTOR3 rnd_sprite[rnd_sprite_meret];
-
-// meshek
-const int max_mesh = 6;
 
 // sztringek
 string author = "[H] Tom - 2020";
@@ -109,5 +102,5 @@ string ido = "00:00:00";
 string datum = "2255. 01. 01.";
 
 // debug / settings
-bool frissit_azonnal = TRUE; // 1000 FPS
-string debug = "";
+bool frissit_azonnal = TRUE; // 1000+ FPS
+bool debug = TRUE;

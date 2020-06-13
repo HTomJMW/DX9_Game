@@ -4,26 +4,36 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <thread>
 #include "struct.h"
+#include "d3d.h"
+#include "hierarchy.h"
 #include "csillagok.h"
 #include "bolygok.h"
 #include "holdak.h"
+#include "diag.h"
 
 using namespace std;
 
 #define PI 3.14159265
 
 extern LPDIRECT3DDEVICE9 d3ddev;
-extern LPD3DXLINE line;
 extern int delta;
 extern float ksz;
+extern float pU_terv;
+extern float pV_terv;
+extern D3D TheD3D;
+extern Hierarchy TheAllocHierarchy;
+extern Diag TheDiag;
+extern bool game_over;
+extern bool debug;
 
 extern float tavmeres(D3DXVECTOR3, D3DXVECTOR3);
 
 class Hajok
 {
 	public:
-		Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, string _birodalom, int _bounding, float _irany_y, vector<D3DMATERIAL9> _materials, vector<IDirect3DTexture9*> _textures, LPD3DXMESH _mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel);
+		Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, string _birodalom, float _irany_y, string _fajlnev, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel);
 		~Hajok();
 
 		string get_nev() const;
@@ -42,7 +52,6 @@ class Hajok
 		void set_pajzs(bool _pajzs);
 		string get_birodalom() const;
 		void set_birodalom(string _birodalom);
-		int get_bounding() const;
 		float get_irany_y() const;
 		void set_irany_y(float _irany_y);
 		LPD3DXMESH get_mesh() const;
@@ -55,10 +64,22 @@ class Hajok
 		void set_start(D3DXVECTOR3 _start);
 		D3DXVECTOR3 get_cel() const;
 		void set_cel(D3DXVECTOR3 _cel);
+		bool get_torol() const;
+		void set_torol(bool _torol);
 
+		void animacio_betoltes(void);
+		void init_anim_controller(void);
+		void anim_run(void);
+		void anim_pos_ell(void);
+		void UpdateAnimTime(void);
+		void UpdateFrameMatrices(void);
+		void UpdateFrameMatrices(LPD3DXFRAME pFrameBase, LPD3DXMATRIX pParentMatrix);
+		void DrawMeshContainer(IDirect3DDevice9* pd3dDevice, LPD3DXMESHCONTAINER pMeshContainerBase, LPD3DXFRAME pFrameBase);
+		void DrawFrame(IDirect3DDevice9* pd3dDevice, LPD3DXFRAME pFrame);
+		Bsphere calc_bounding_sphere(ID3DXMesh*);
 		Bbox calc_bounding_box(ID3DXMesh*);
+		Bsphere get_bounding_sphere() const;
 		Bbox get_bounding_box() const;
-		Bbox get_forgatott_bbox() const;
 
 		void kivalaszt_box(void);
 
@@ -68,7 +89,8 @@ class Hajok
 		void cel_render(LPD3DXMESH);
 		float iranyszog_y(float, D3DXVECTOR3, D3DXVECTOR3);
 		void render(void);
-		void bbox_forgat(void);
+
+		void cleanup(void);
 
 	private:
 		string _nev;
@@ -79,9 +101,9 @@ class Hajok
 		int _legenyseg;
 		bool _pajzs;
 		string _birodalom;
-		int _bounding; // bounding box: 0, bounding sphere: 1
 		float _irany_y;
 		bool _kivalaszt;
+		bool _torol;
 
 		D3DXMATRIX _matRotateX;
 		D3DXMATRIX _matRotateY;
@@ -93,8 +115,10 @@ class Hajok
 
 		D3DXVECTOR3 _pos;
 
-		vector<D3DMATERIAL9> _materials;
-		vector<IDirect3DTexture9*> _textures;
+		string _fajlnev;
+		LPD3DXFRAME _FrameHeirarchy;
+		ID3DXAnimationController* _AnimController;
+		ID3DXAnimationSet* _AnimSet;
 		LPD3DXMESH _mesh;
 
 		float _tavX;
@@ -108,7 +132,7 @@ class Hajok
 
 		D3DXVECTOR3 _vertexList[2]; // mozgás vonal
 
+		Bsphere _bounding_sphere;
 		Bbox _bounding_box;
-		Bbox _forgatott_bbox;
 		LPD3DXMESH _boxmesh;
 };

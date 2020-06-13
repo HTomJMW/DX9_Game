@@ -10,19 +10,9 @@ Utkozesvizsgalat::~Utkozesvizsgalat()
 
 }
 
-bool Utkozesvizsgalat::utkozes_box_point(D3DXVECTOR3 &p, D3DXVECTOR3 _min, D3DXVECTOR3 _max, D3DXVECTOR3 _pos)
-{
-	if ((p.x >= _pos.x + _min.x && p.y >= _pos.y + _min.y && p.z >= _pos.z + _min.z) && (p.x <= _pos.x + _max.x && p.y <= _pos.y + _max.y && p.z <= _pos.z + _max.z))
-	{
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
-
 bool Utkozesvizsgalat::utkozes_sphere_point(D3DXVECTOR3 &p, D3DXVECTOR3 _center, float _radius, D3DXVECTOR3 _pos)
 {
-	float _distance = tavmeres(p, (_pos + _center));
+	float _distance = TheFunctions.tavmeres(p, (_pos + _center));
 
 	if (_distance <= _radius)
 	{
@@ -32,21 +22,9 @@ bool Utkozesvizsgalat::utkozes_sphere_point(D3DXVECTOR3 &p, D3DXVECTOR3 _center,
 	}
 }
 
-bool Utkozesvizsgalat::utkozes_box_box(D3DXVECTOR3 _min_A, D3DXVECTOR3 _max_A, D3DXVECTOR3 _pos_A, D3DXVECTOR3 _min_B, D3DXVECTOR3 _max_B, D3DXVECTOR3 _pos_B)
-{
-	if ((_pos_A.x + _min_A.x <= _pos_B.x + _max_B.x && _pos_A.x + _max_A.x >= _pos_B.x + _min_B.x) &&
-		(_pos_A.y + _min_A.y <= _pos_B.y + _max_B.y && _pos_A.y + _max_A.y >= _pos_B.y + _min_B.y) &&
-		(_pos_A.z + _min_A.z <= _pos_B.z + _max_B.z && _pos_A.z + _max_A.z >= _pos_B.z + _min_B.z))
-	{
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
-
 bool Utkozesvizsgalat::utkozes_sphere_sphere(D3DXVECTOR3 _center_A, float _radius_A, D3DXVECTOR3 _pos_A, D3DXVECTOR3 _center_B, float _radius_B, D3DXVECTOR3 _pos_B)
 {
-	float _distance = tavmeres((_pos_A + _center_A), (_pos_B + _center_B));
+	float _distance = TheFunctions.tavmeres((_pos_A + _center_A), (_pos_B + _center_B));
 
 	if (_distance <= (_radius_A + _radius_B))
 	{
@@ -56,23 +34,142 @@ bool Utkozesvizsgalat::utkozes_sphere_sphere(D3DXVECTOR3 _center_A, float _radiu
 	}
 }
 
-bool Utkozesvizsgalat::utkozes_box_sphere(D3DXVECTOR3 _box_min, D3DXVECTOR3 _box_max, D3DXVECTOR3 _box_pos, D3DXVECTOR3 _sphere_center, float _sphere_radius, D3DXVECTOR3 _sphere_pos)
+void Utkozesvizsgalat::utkozesvizsgalat_loop(void)
 {
-	float _x = 0.0f;
-	float _y = 0.0f;
-	float _z = 0.0f;
-	float _distance = 0.0f;
+	float _tav = -1.0f;
+	bool _utkozes = FALSE;
+	D3DXVECTOR3 _cam_pos;
 
-	_x = max((_box_pos.x + _box_min.x), min((_sphere_pos.x + _sphere_center.x), (_box_pos.x + _box_max.x)));
-	_y = max((_box_pos.y + _box_min.y), min((_sphere_pos.y + _sphere_center.y), (_box_pos.y + _box_max.y)));
-	_z = max((_box_pos.z + _box_min.z), min((_sphere_pos.z + _sphere_center.z), (_box_pos.z + _box_max.z)));
-
-	_distance = tavmeres(D3DXVECTOR3(_x, _y, _z), (_sphere_pos + _sphere_center));
-
-	if (_distance <= _sphere_radius)
+	while (!game_over)
 	{
-		return TRUE;
-	} else {
-		return FALSE;
+		_utkozes = FALSE;
+		_tav = -1.0f;
+		TheCamera.getPosition(&_cam_pos);
+
+		if (hajok_vec.size() > 0)
+		{
+			for (size_t i = 0; i < hajok_vec.size(); i++)
+			{
+				// hajó - kamera ütközés
+				_tav = TheFunctions.tavmeres(_cam_pos, hajok_vec[i].get_pos());
+				if (_tav > 0.0f && _tav < 16.0f)
+				{
+					_utkozes = utkozes_sphere_point(_cam_pos, hajok_vec[i].get_bounding_sphere()._center, hajok_vec[i].get_bounding_sphere()._radius, hajok_vec[i].get_pos());
+					if (_utkozes)
+					{
+						TheCamera.walk(10.0f);
+						TheCamera.strafe(10.0f);
+					}
+				}
+
+				// hajó - hajó, csillag, bolygó, hold ütközés
+				for (size_t j = 0; j < hajok_vec.size(); j++)
+				{
+					_tav = TheFunctions.tavmeres(hajok_vec[i].get_pos(), hajok_vec[j].get_pos());
+					if (_tav > 0.0f && _tav < 16.0f)
+					{
+						_utkozes = utkozes_sphere_sphere(hajok_vec[i].get_bounding_sphere()._center, hajok_vec[i].get_bounding_sphere()._radius, hajok_vec[i].get_pos(), hajok_vec[j].get_bounding_sphere()._center, hajok_vec[j].get_bounding_sphere()._radius, hajok_vec[j].get_pos());
+						if (_utkozes)
+						{
+							hajok_vec[i].set_hp(0);
+							hajok_vec[i].set_pick(FALSE);
+							hajok_vec[i].anim_run();
+							hajok_vec[j].set_hp(0);
+							hajok_vec[j].set_pick(FALSE);
+							hajok_vec[j].anim_run();
+						}
+					}
+				}
+				for (size_t k = 0; k < csillagok_vec.size(); k++)
+				{
+					_tav = TheFunctions.tavmeres(hajok_vec[i].get_pos(), csillagok_vec[k].get_pos());
+					if (_tav > 0.0f && _tav < 80.0f)
+					{
+						_utkozes = utkozes_sphere_sphere(hajok_vec[i].get_bounding_sphere()._center, hajok_vec[i].get_bounding_sphere()._radius, hajok_vec[i].get_pos(), csillagok_vec[k].get_bounding_sphere()._center, csillagok_vec[k].get_bounding_sphere()._radius, csillagok_vec[k].get_pos());
+						if (_utkozes)
+						{
+							hajok_vec[i].set_hp(0);
+							hajok_vec[i].set_pick(FALSE);
+							hajok_vec[i].anim_run();
+						}
+					}
+				}
+				for (size_t l = 0; l < bolygok_vec.size(); l++)
+				{
+					_tav = TheFunctions.tavmeres(hajok_vec[i].get_pos(), bolygok_vec[l].get_pos());
+					if (_tav > 0.0f && _tav < 40.0f)
+					{
+						_utkozes = utkozes_sphere_sphere(hajok_vec[i].get_bounding_sphere()._center, hajok_vec[i].get_bounding_sphere()._radius, hajok_vec[i].get_pos(), bolygok_vec[l].get_bounding_sphere()._center, bolygok_vec[l].get_bounding_sphere()._radius, bolygok_vec[l].get_pos());
+						if (_utkozes)
+						{
+							hajok_vec[i].set_hp(0);
+							hajok_vec[i].set_pick(FALSE);
+							hajok_vec[i].anim_run();
+						}
+					}
+				}
+				for (size_t m = 0; m < holdak_vec.size(); m++)
+				{
+					_tav = TheFunctions.tavmeres(hajok_vec[i].get_pos(), holdak_vec[m].get_pos());
+					if (_tav > 0.0f && _tav < 20.0f)
+					{
+						_utkozes = utkozes_sphere_sphere(hajok_vec[i].get_bounding_sphere()._center, hajok_vec[i].get_bounding_sphere()._radius, hajok_vec[i].get_pos(), holdak_vec[m].get_bounding_sphere()._center, holdak_vec[m].get_bounding_sphere()._radius, holdak_vec[m].get_pos());
+						if (_utkozes)
+						{
+							hajok_vec[i].set_hp(0);
+							hajok_vec[i].set_pick(FALSE);
+							hajok_vec[i].anim_run();
+						}
+					}
+				}
+			}
+		}
+
+		// kamera ütközés égitesttel
+		for (size_t n = 0; n < csillagok_vec.size(); n++)
+		{
+			_tav = TheFunctions.tavmeres(_cam_pos, csillagok_vec[n].get_pos());
+			if (_tav < 80.0f)
+			{
+				_utkozes = utkozes_sphere_point(_cam_pos, csillagok_vec[n].get_bounding_sphere()._center, csillagok_vec[n].get_bounding_sphere()._radius, csillagok_vec[n].get_pos());
+				if (_utkozes)
+				{
+					TheCamera.walk(10.0f);
+					TheCamera.strafe(10.0f);
+				}
+			}
+		}
+
+		for (size_t o = 0; o < bolygok_vec.size(); o++)
+		{
+			_tav = TheFunctions.tavmeres(_cam_pos, bolygok_vec[o].get_pos());
+			if (_tav < 40.0f)
+			{
+				_utkozes = utkozes_sphere_point(_cam_pos, bolygok_vec[o].get_bounding_sphere()._center, bolygok_vec[o].get_bounding_sphere()._radius, bolygok_vec[o].get_pos());
+				if (_utkozes)
+				{
+					TheCamera.walk(10.0f);
+					TheCamera.strafe(10.0f);
+				}
+			}
+		}
+
+		for (size_t p = 0; p < holdak_vec.size(); p++)
+		{
+			_tav = TheFunctions.tavmeres(_cam_pos, holdak_vec[p].get_pos());
+			if (_tav < 20.0f)
+			{
+				_utkozes = utkozes_sphere_point(_cam_pos, holdak_vec[p].get_bounding_sphere()._center, holdak_vec[p].get_bounding_sphere()._radius, holdak_vec[p].get_pos());
+				if (_utkozes)
+				{
+					TheCamera.walk(10.0f);
+					TheCamera.strafe(10.0f);
+				}
+			}
+		}
+
+		Sleep(100);
 	}
+
+	return;
 }

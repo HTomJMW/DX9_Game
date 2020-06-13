@@ -1,13 +1,13 @@
 #include "csillagok.h"
 
-Csillagok::Csillagok(string _nev, string _tipus, int _bounding, IDirect3DTexture9 *_texture, LPD3DXMESH _mesh, D3DXVECTOR3 _pos, float _r)
+Csillagok::Csillagok(string _nev, string _tipus, const vector<D3DMATERIAL9> &_mtrls_mesh, const vector<IDirect3DTexture9*> &_textures_mesh, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, float _r)
 {
 	_kivalaszt = FALSE;
 
 	this->_nev = _nev;
 	this->_tipus = _tipus;
-	this->_bounding = _bounding;
-	this->_texture = _texture;
+	this->_mtrls_mesh = _mtrls_mesh;
+	this->_textures_mesh = _textures_mesh;
 	this->_mesh = _mesh;
 	this->_pos = _pos;
 	this->_r = _r;
@@ -17,7 +17,7 @@ Csillagok::Csillagok(string _nev, string _tipus, int _bounding, IDirect3DTexture
 
 Csillagok::~Csillagok()
 {
-
+	
 }
 
 string Csillagok::get_nev() const { return _nev; }
@@ -27,8 +27,6 @@ void Csillagok::set_nev(string _nev) { this->_nev = _nev; }
 string Csillagok::get_tipus() const { return _tipus; }
 
 void Csillagok::set_tipus(string _tipus) { this->_tipus = _tipus; }
-
-int Csillagok::get_bounding() const { return _bounding; }
 
 LPD3DXMESH Csillagok::get_mesh() const { return _mesh; }
 
@@ -67,12 +65,17 @@ Bsphere Csillagok::calc_bounding_sphere(ID3DXMesh* _mesh)
 
 void Csillagok::render(void)
 {
-	d3ddev->SetTexture(0, _texture);
 	D3DXMatrixTranslation(&_matTranslate, _pos.x, _pos.y, _pos.z);
 	D3DXMatrixRotationY(&_matRotateY, ksz * _r);
 	d3ddev->SetTransform(D3DTS_WORLD, &(_matRotateY * _matTranslate));
 	d3ddev->GetTransform(D3DTS_WORLD, &_transform);
-	_mesh->DrawSubset(0);
+
+	for (size_t i = 0; i < _mtrls_mesh.size(); i++)
+	{
+		d3ddev->SetMaterial(&_mtrls_mesh[i]);
+		d3ddev->SetTexture(0, _textures_mesh[i]);
+		_mesh->DrawSubset(i);
+	}
 
 	return;
 }

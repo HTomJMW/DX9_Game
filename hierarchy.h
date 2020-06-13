@@ -2,8 +2,10 @@
 
 #include <d3dx9.h>
 #include <tchar.h>
-#include <dshow.h> // StringCchCat
+#include <string>
 #include "struct.h"
+
+using namespace std;
 
 #define SAFE_DELETE(p)       { if (p) { delete (p);     (p)=NULL; } }
 #define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p);   (p)=NULL; } }

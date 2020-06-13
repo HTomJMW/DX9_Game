@@ -1,6 +1,6 @@
 #include "bolygok.h"
 
-Bolygok::Bolygok(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, int _bounding, IDirect3DTexture9 *_texture, LPD3DXMESH _mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, float _r)
+Bolygok::Bolygok(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, const vector<D3DMATERIAL9> &_mtrls_mesh, const vector<IDirect3DTexture9*> &_textures_mesh, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, float _r)
 {
 	_kivalaszt = FALSE;
 
@@ -9,8 +9,8 @@ Bolygok::Bolygok(string _nev, string _tipus, bool _lakhato, int _nepesseg, strin
 	this->_lakhato = _lakhato;
 	this->_nepesseg = _nepesseg;
 	this->_birodalom = _birodalom;
-	this->_bounding = _bounding;
-	this->_texture = _texture;
+	this->_mtrls_mesh = _mtrls_mesh;
+	this->_textures_mesh = _textures_mesh;
 	this->_mesh = _mesh;
 	this->_pos_1 = _pos_1;
 	this->_pos_2 = _pos_2;
@@ -43,8 +43,6 @@ void Bolygok::set_nepesseg(int _nepesseg) { this->_nepesseg = _nepesseg; }
 string Bolygok::get_birodalom() const { return _birodalom; }
 
 void Bolygok::set_birodalom(string _birodalom) { this->_birodalom = _birodalom; }
-
-int Bolygok::get_bounding() const { return _bounding; }
 
 LPD3DXMESH Bolygok::get_mesh() const { return _mesh; }
 
@@ -83,13 +81,18 @@ Bsphere Bolygok::calc_bounding_sphere(ID3DXMesh* _mesh)
 
 void Bolygok::render(void)
 {
-	d3ddev->SetTexture(0, _texture);
 	D3DXMatrixTranslation(&_matTranslate1, _pos_1.x, _pos_1.y, _pos_1.z);
 	D3DXMatrixRotationY(&_matRotateY, ksz * _r);
 	D3DXMatrixTranslation(&_matTranslate2, _pos_2.x, _pos_2.y, _pos_2.z);
 	d3ddev->SetTransform(D3DTS_WORLD, &(_matTranslate1 * _matRotateY * _matTranslate2));
 	d3ddev->GetTransform(D3DTS_WORLD, &_transform);
-	_mesh->DrawSubset(0);
+	
+	for (size_t i = 0; i < _mtrls_mesh.size(); i++)
+	{
+		d3ddev->SetMaterial(&_mtrls_mesh[i]);
+		d3ddev->SetTexture(0, _textures_mesh[i]);
+		_mesh->DrawSubset(i);
+	}
 
 	return;
 }

@@ -1,6 +1,6 @@
 #include "holdak.h"
 
-Holdak::Holdak(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, int _bounding, IDirect3DTexture9 *_texture, LPD3DXMESH _mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, D3DXVECTOR3 _pos_3, float _r)
+Holdak::Holdak(string _nev, string _tipus, bool _lakhato, int _nepesseg, string _birodalom, const vector<D3DMATERIAL9> &_mtrls_mesh, const vector<IDirect3DTexture9*> &_textures_mesh, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos_1, D3DXVECTOR3 _pos_2, D3DXVECTOR3 _pos_3, float _r)
 {
 	_kivalaszt = FALSE;
 
@@ -9,8 +9,8 @@ Holdak::Holdak(string _nev, string _tipus, bool _lakhato, int _nepesseg, string 
 	this->_lakhato = _lakhato;
 	this->_nepesseg = _nepesseg;
 	this->_birodalom = _birodalom;
-	this->_bounding = _bounding;
-	this->_texture = _texture;
+	this->_mtrls_mesh = _mtrls_mesh;
+	this->_textures_mesh = _textures_mesh;
 	this->_mesh = _mesh;
 
 	_bounding_sphere = calc_bounding_sphere(_mesh);
@@ -40,8 +40,6 @@ void Holdak::set_nepesseg(int _nepesseg) { this->_nepesseg = _nepesseg; }
 string Holdak::get_birodalom() const { return _birodalom; }
 
 void Holdak::set_birodalom(string _birodalom) { this->_birodalom = _birodalom; }
-
-int Holdak::get_bounding() const { return _bounding; }
 
 LPD3DXMESH Holdak::get_mesh() const { return _mesh; }
 
@@ -80,8 +78,18 @@ Bsphere Holdak::calc_bounding_sphere(ID3DXMesh* _mesh)
 
 void Holdak::render(void)
 {
-	// pótolni
+	// 3 translate - pótolni
+	D3DXMatrixTranslation(&_matTranslate1, _pos_1.x, _pos_1.y, _pos_1.z);
+	D3DXMatrixRotationY(&_matRotateY, ksz * _r);
+	d3ddev->SetTransform(D3DTS_WORLD, &(_matRotateY * _matTranslate1));
 	d3ddev->GetTransform(D3DTS_WORLD, &_transform);
+
+	for (size_t i = 0; i < _mtrls_mesh.size(); i++)
+	{
+		d3ddev->SetMaterial(&_mtrls_mesh[i]);
+		d3ddev->SetTexture(0, _textures_mesh[i]);
+		_mesh->DrawSubset(i);
+	}
 
 	return;
 }
