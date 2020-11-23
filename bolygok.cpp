@@ -66,7 +66,7 @@ Bsphere Bolygok::calc_bounding_sphere(ID3DXMesh* _mesh)
 	float _radius = 0.0f;
 
 	BYTE* v = 0;
-	_mesh->LockVertexBuffer(D3DLOCK_READONLY, (void**)&v);
+	_mesh->LockVertexBuffer(0, (void**)&v);
 
 	D3DXComputeBoundingSphere((D3DXVECTOR3*)v, _mesh->GetNumVertices(), D3DXGetFVFVertexSize(_mesh->GetFVF()), &_center, &_radius);
 
@@ -94,5 +94,10 @@ void Bolygok::render(void)
 		_mesh->DrawSubset(i);
 	}
 
+	return;
+}
+
+void Bolygok::cleanup(void)
+{
 	return;
 }

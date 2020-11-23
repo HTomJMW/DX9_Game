@@ -12,6 +12,7 @@ extern int moveYPos;
 extern bool game_start;
 extern bool game_over;
 extern bool game_pause;
+extern bool game_settings;
 extern D3D TheD3D;
 extern D3DXCOLOR feher;
 
@@ -32,6 +33,7 @@ class Menu
 		void menu_loop(int, int);
 		void save(void);
 		void load(void);
+		void settings_fgv(int, int);
 
 		void menu_render(void);
 };

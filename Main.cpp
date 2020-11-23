@@ -76,8 +76,6 @@ D3DXHANDLE WVP_handle;
 D3DXHANDLE color_handle;
 D3DXHANDLE texture_handle;
 IDirect3DVertexDeclaration9* decl_ptr = NULL;
-// shader vertex puffer
-LPDIRECT3DVERTEXBUFFER9 shader_vpuffer_ptr = NULL;
 //3D-koordináta vertex struktúra
 D3DVERTEXELEMENT9 vertexElements[] =
 { 
@@ -92,7 +90,6 @@ void initD3D(HWND hWnd);
 void render_frame(void);
 void cleanD3D(void);
 void init_graphics(void);
-void init_shader(void);
 void init_light(void);
 void init_materials(void);
 void kijelolo(void);
@@ -133,8 +130,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Csillagok csillag_0 = { "GAX-A001", "Fõsorozat", TheMesh.mtrls_mesh_0, TheMesh.textures_mesh_0, TheMesh.static_meshes[0], D3DXVECTOR3(640.0f, 640.0f, 640.0f), 1.5f };
 	Bolygok bolygo_0 = { "G-01", "Kõzet", TRUE, 5000, "Ember", TheMesh.mtrls_mesh_1, TheMesh.textures_mesh_1, TheMesh.static_meshes[1], D3DXVECTOR3(300.0f, 0.0f, 0.0f), D3DXVECTOR3(640.0f, 640.0f, 640.0f), 0.3f };
 	Bolygok bolygo_1 = { "G-02", "Kõzet", TRUE, 1000, "Ember", TheMesh.mtrls_mesh_2, TheMesh.textures_mesh_2, TheMesh.static_meshes[2], D3DXVECTOR3(500.0f, 0.0f, 0.0f), D3DXVECTOR3(640.0f, 640.0f, 640.0f), 0.2f };
-	Hajok hajo_0 = { "Flagship", "Ûrhajó", 2000, 500, 15.0f, 250, FALSE, "Ember", 0.0f, "Models/flagship_3.X", TheMesh.static_meshes[4], D3DXVECTOR3(1024.0f, 640.0f, 640.0f), D3DXVECTOR3(1024.0f, 640.0f, 640.0f) };
-	Hajok hajo_1 = { "Mh-1", "Mûhold", 500, 100, 0.0f, 0, FALSE, "Ember", 270.0f, "Models/muhold.X",  TheMesh.static_meshes[4], D3DXVECTOR3(640.0f, 720.0f, 500.0f), D3DXVECTOR3(640.0f, 720.0f, 500.0f) };
+	Hajok hajo_0 = { "Flagship", "Ûrhajó", 2000, 500, 15.0f, 250, FALSE, 750, 30000, "Ember", 0.0f, "Models/flagship_3.X", TheMesh.static_meshes[4], D3DXVECTOR3(1024.0f, 640.0f, 640.0f), D3DXVECTOR3(1024.0f, 640.0f, 640.0f) };
+	Hajok hajo_1 = { "Mh-1", "Mûhold", 500, 100, 0.0f, 0, FALSE, 0, 5000, "Ember", 270.0f, "Models/muhold.X",  TheMesh.static_meshes[4], D3DXVECTOR3(640.0f, 720.0f, 500.0f), D3DXVECTOR3(640.0f, 720.0f, 500.0f) };
 
 	// vectorhoz adás
 	csillagok_vec.push_back(csillag_0);
@@ -218,7 +215,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 			if (game_pause || game_start)
 			{
-				TheMenu.menu_fgv(screen_width,  screen_height);
+				if (!game_settings) { TheMenu.menu_fgv(screen_width, screen_height); } else { TheMenu.settings_fgv(screen_width, screen_height); }
 			} else {
 				ThePick.tav_fuggo_pick();
 				kijelolo_negyzet = TRUE;
@@ -372,7 +369,6 @@ void initD3D(HWND hWnd)
 	init_graphics(); // call the function to initialize the shapes
 	init_materials();
 	init_light(); // call the light
-	init_shader();
 	// menu loop a starthoz
 	thread szal_2(&Menu::menu_loop, ref(TheMenu), screen_width, screen_height);
 	szal_2.detach();
@@ -435,9 +431,6 @@ void render_frame(void)
 
 	d3ddev->BeginScene();
 
-	// select which vertex format we are using
-	d3ddev->SetFVF(CUSTOMFVF);
-
 	// set the view transform - flexcam
 	D3DXMATRIX V;
 	TheCamera.getViewMatrix(&V);
@@ -460,36 +453,31 @@ void render_frame(void)
 		D3DXMATRIX matScale;
 		D3DXMATRIX matTranslate;
 
-		// DX9 shader v 2.0 p 2.0
-
-		d3ddev->SetStreamSource(0, shader_vpuffer_ptr, 0, sizeof(SVertex));
+		// set the stream source
+		d3ddev->SetStreamSource(0, v_buffer, 0, sizeof(CUSTOMVERTEX));
 		d3ddev->SetVertexDeclaration(decl_ptr);
 
 		D3DXMATRIXA16 _WorldViewProjection;
 
-		D3DXMatrixTranslation(&matTranslate, 64.0f, 64.0f, 64.0f);
+		D3DXMatrixTranslation(&matTranslate, 0.0f, 0.0f, 0.0f);
 		d3ddev->SetTransform(D3DTS_WORLD, &(matTranslate));
 
 		_WorldViewProjection = matTranslate * V * matProjection;
 
-		effect_ptr->SetValue(color_handle, &sarga, sizeof(D3DXCOLOR));
+		/*effect_ptr->SetValue(color_handle, &sarga, sizeof(D3DXCOLOR));
 		effect_ptr->SetTexture(texture_handle, TheD3D.textures[0]);
 		effect_ptr->SetMatrix(WVP_handle, &(_WorldViewProjection));
-		effect_ptr->SetTechnique(tech_handle);
+		effect_ptr->SetTechnique(tech_handle);*/
 
-		UINT passCnt = 1;
+		/*UINT passCnt = 1;
 		effect_ptr->Begin(&passCnt, 0);
 		for (UINT pass = 0; pass < passCnt; pass++)
 		{
 			effect_ptr->BeginPass(pass);
-			//d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, 0, 1); // disabled
+			d3ddev->DrawPrimitive(D3DPT_POINTLIST, 0, 1);
 			effect_ptr->EndPass();
 		}
-		effect_ptr->End();
-
-		// normál DirectX 9
-		// set the stream source
-		d3ddev->SetStreamSource(1, v_buffer, 0, sizeof(CUSTOMVERTEX));
+		effect_ptr->End();*/
 
 		d3ddev->SetRenderState(D3DRS_LIGHTING, TRUE);
 		d3ddev->SetLight(0, &light);
@@ -526,6 +514,9 @@ void render_frame(void)
 			}
 		}
 
+		d3ddev->SetFVF(CUSTOMFVF);
+		d3ddev->SetStreamSource(0, v_buffer, 0, sizeof(CUSTOMVERTEX));
+
 		// pont csillagok
 		d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);
 		d3ddev->SetTexture(0, NULL);
@@ -537,6 +528,16 @@ void render_frame(void)
 			d3ddev->DrawPrimitive(D3DPT_POINTLIST, 0, 1);
 		}
 
+		// pályák
+		D3DXMatrixTranslation(&matTranslate, 640.0f, 640.0f, 640.0f);
+		D3DXMatrixScaling(&matScale, 300.0f, 300.0f, 300.0f);
+		d3ddev->SetTransform(D3DTS_WORLD, &(matScale * matTranslate));
+		d3ddev->DrawPrimitive(D3DPT_LINESTRIP, 1, 72);
+
+		D3DXMatrixScaling(&matScale, 500.0f, 500.0f, 500.0f);
+		d3ddev->SetTransform(D3DTS_WORLD, &(matScale * matTranslate));
+		d3ddev->DrawPrimitive(D3DPT_LINESTRIP, 1, 72);
+
 		// kiírások
 		TheD3D.player_name->DrawTextA(NULL, ("Player: " + p_nev).c_str(), -1, &TheD3D.player_rect, DT_LEFT, feher);
 		TheD3D.fps_counter->DrawTextA(NULL, (to_string(fps) + " FPS").c_str(), -1, &TheD3D.fps_rect, DT_LEFT, feher);
@@ -544,6 +545,7 @@ void render_frame(void)
 		TheD3D.pontos_ido->DrawTextA(NULL, ido.c_str(), -1, &TheD3D.pontos_ido_rect, DT_LEFT, feher);
 		TheD3D.game_datum->DrawTextA(NULL, datum.c_str(), -1, &TheD3D.game_datum_rect, DT_LEFT, feher);
 		TheD3D.adatok->DrawTextA(NULL, (TheFunctions.adatkiiro()).c_str(), -1, &TheD3D.adatok_rect, DT_LEFT, feher);
+		TheD3D.penz->DrawTextA(NULL, penz.c_str(), -1, &TheD3D.penz_rect, DT_LEFT, feher);
 
 		// sprites
 		TheD3D.sprite1->Begin(D3DXSPRITE_ALPHABLEND);
@@ -637,13 +639,24 @@ void cleanD3D(void)
 	d3d->Release();    // close and release Direct3D
 	effect_ptr->Release();
 	decl_ptr->Release();
-	shader_vpuffer_ptr->Release();
 	TheD3D.cleanup();
 	TheSound.cleanup();
 	TheMesh.cleanup();
 	for (size_t i = 0; i < hajok_vec.size(); i++)
 	{
 		hajok_vec[i].cleanup();
+	}
+	for (size_t i = 0; i < csillagok_vec.size(); i++)
+	{
+		csillagok_vec[i].cleanup();
+	}
+	for (size_t i = 0; i < bolygok_vec.size(); i++)
+	{
+		bolygok_vec[i].cleanup();
+	}
+	for (size_t i = 0; i < holdak_vec.size(); i++)
+	{
+		holdak_vec[i].cleanup();
 	}
 }
 
@@ -654,22 +667,96 @@ void init_graphics(void)
 	CUSTOMVERTEX vertices[] =
 	{
 		//pont csillagokhoz
-		{ 0.0f, 0.0f, 0.0f, D3DXVECTOR3(0.0f, 0.0f, 0.0f), 0.0f, 1.0f }, // 0
+		{ 0.0f, 0.0f, 0.0f, D3DCOLOR_XRGB(255, 255, 255) }, // 0
+
+		{ float(cos(D3DXToRadian(0))), 0.0f, float(sin(D3DXToRadian(0))), szurke }, // 1
+		{ float(cos(D3DXToRadian(5))), 0.0f, float(sin(D3DXToRadian(5))), szurke }, // 2
+		{ float(cos(D3DXToRadian(10))), 0.0f, float(sin(D3DXToRadian(10))), szurke }, // 3
+		{ float(cos(D3DXToRadian(15))), 0.0f, float(sin(D3DXToRadian(15))), szurke }, // 4
+		{ float(cos(D3DXToRadian(20))), 0.0f, float(sin(D3DXToRadian(20))), szurke }, // 5
+		{ float(cos(D3DXToRadian(25))), 0.0f, float(sin(D3DXToRadian(25))), szurke }, // 6
+		{ float(cos(D3DXToRadian(30))), 0.0f, float(sin(D3DXToRadian(30))), szurke }, // 7
+		{ float(cos(D3DXToRadian(35))), 0.0f, float(sin(D3DXToRadian(35))), szurke }, // 8
+		{ float(cos(D3DXToRadian(40))), 0.0f, float(sin(D3DXToRadian(40))), szurke }, // 9
+		{ float(cos(D3DXToRadian(45))), 0.0f, float(sin(D3DXToRadian(45))), szurke }, // 10
+		{ float(cos(D3DXToRadian(50))), 0.0f, float(sin(D3DXToRadian(50))), szurke }, // 11
+		{ float(cos(D3DXToRadian(55))), 0.0f, float(sin(D3DXToRadian(55))), szurke }, // 12
+		{ float(cos(D3DXToRadian(60))), 0.0f, float(sin(D3DXToRadian(60))), szurke }, // 13
+		{ float(cos(D3DXToRadian(65))), 0.0f, float(sin(D3DXToRadian(65))), szurke }, // 14
+		{ float(cos(D3DXToRadian(70))), 0.0f, float(sin(D3DXToRadian(70))), szurke }, // 15
+		{ float(cos(D3DXToRadian(75))), 0.0f, float(sin(D3DXToRadian(75))), szurke }, // 16
+		{ float(cos(D3DXToRadian(80))), 0.0f, float(sin(D3DXToRadian(80))), szurke }, // 17
+		{ float(cos(D3DXToRadian(85))), 0.0f, float(sin(D3DXToRadian(85))), szurke }, // 18
+		{ float(cos(D3DXToRadian(90))), 0.0f, float(sin(D3DXToRadian(90))), szurke }, // 19
+		{ float(cos(D3DXToRadian(95))), 0.0f, float(sin(D3DXToRadian(95))), szurke }, // 20
+		{ float(cos(D3DXToRadian(100))), 0.0f, float(sin(D3DXToRadian(100))), szurke }, // 21
+		{ float(cos(D3DXToRadian(105))), 0.0f, float(sin(D3DXToRadian(105))), szurke }, // 22
+		{ float(cos(D3DXToRadian(110))), 0.0f, float(sin(D3DXToRadian(110))), szurke }, // 23
+		{ float(cos(D3DXToRadian(115))), 0.0f, float(sin(D3DXToRadian(115))), szurke }, // 24
+		{ float(cos(D3DXToRadian(120))), 0.0f, float(sin(D3DXToRadian(120))), szurke }, // 25
+		{ float(cos(D3DXToRadian(125))), 0.0f, float(sin(D3DXToRadian(125))), szurke }, // 26
+		{ float(cos(D3DXToRadian(130))), 0.0f, float(sin(D3DXToRadian(130))), szurke }, // 27
+		{ float(cos(D3DXToRadian(135))), 0.0f, float(sin(D3DXToRadian(135))), szurke }, // 28
+		{ float(cos(D3DXToRadian(140))), 0.0f, float(sin(D3DXToRadian(140))), szurke }, // 29
+		{ float(cos(D3DXToRadian(145))), 0.0f, float(sin(D3DXToRadian(145))), szurke }, // 30
+		{ float(cos(D3DXToRadian(150))), 0.0f, float(sin(D3DXToRadian(150))), szurke }, // 31
+		{ float(cos(D3DXToRadian(155))), 0.0f, float(sin(D3DXToRadian(155))), szurke }, // 32
+		{ float(cos(D3DXToRadian(160))), 0.0f, float(sin(D3DXToRadian(160))), szurke }, // 33
+		{ float(cos(D3DXToRadian(165))), 0.0f, float(sin(D3DXToRadian(165))), szurke }, // 34
+		{ float(cos(D3DXToRadian(170))), 0.0f, float(sin(D3DXToRadian(170))), szurke }, // 35
+		{ float(cos(D3DXToRadian(175))), 0.0f, float(sin(D3DXToRadian(175))), szurke }, // 36
+		{ float(cos(D3DXToRadian(180))), 0.0f, float(sin(D3DXToRadian(180))), szurke }, // 37
+		{ float(cos(D3DXToRadian(185))), 0.0f, float(sin(D3DXToRadian(185))), szurke }, // 38
+		{ float(cos(D3DXToRadian(190))), 0.0f, float(sin(D3DXToRadian(190))), szurke }, // 39
+		{ float(cos(D3DXToRadian(195))), 0.0f, float(sin(D3DXToRadian(195))), szurke }, // 40
+		{ float(cos(D3DXToRadian(200))), 0.0f, float(sin(D3DXToRadian(200))), szurke }, // 41
+		{ float(cos(D3DXToRadian(205))), 0.0f, float(sin(D3DXToRadian(205))), szurke }, // 42
+		{ float(cos(D3DXToRadian(210))), 0.0f, float(sin(D3DXToRadian(210))), szurke }, // 43
+		{ float(cos(D3DXToRadian(215))), 0.0f, float(sin(D3DXToRadian(215))), szurke }, // 44
+		{ float(cos(D3DXToRadian(220))), 0.0f, float(sin(D3DXToRadian(220))), szurke }, // 45
+		{ float(cos(D3DXToRadian(225))), 0.0f, float(sin(D3DXToRadian(225))), szurke }, // 46
+		{ float(cos(D3DXToRadian(230))), 0.0f, float(sin(D3DXToRadian(230))), szurke }, // 47
+		{ float(cos(D3DXToRadian(235))), 0.0f, float(sin(D3DXToRadian(235))), szurke }, // 48
+		{ float(cos(D3DXToRadian(240))), 0.0f, float(sin(D3DXToRadian(240))), szurke }, // 49
+		{ float(cos(D3DXToRadian(245))), 0.0f, float(sin(D3DXToRadian(245))), szurke }, // 50
+		{ float(cos(D3DXToRadian(250))), 0.0f, float(sin(D3DXToRadian(250))), szurke }, // 51
+		{ float(cos(D3DXToRadian(255))), 0.0f, float(sin(D3DXToRadian(255))), szurke }, // 52
+		{ float(cos(D3DXToRadian(260))), 0.0f, float(sin(D3DXToRadian(260))), szurke }, // 53
+		{ float(cos(D3DXToRadian(265))), 0.0f, float(sin(D3DXToRadian(265))), szurke }, // 54
+		{ float(cos(D3DXToRadian(270))), 0.0f, float(sin(D3DXToRadian(270))), szurke }, // 55
+		{ float(cos(D3DXToRadian(275))), 0.0f, float(sin(D3DXToRadian(275))), szurke }, // 56
+		{ float(cos(D3DXToRadian(280))), 0.0f, float(sin(D3DXToRadian(280))), szurke }, // 57
+		{ float(cos(D3DXToRadian(285))), 0.0f, float(sin(D3DXToRadian(285))), szurke }, // 58
+		{ float(cos(D3DXToRadian(290))), 0.0f, float(sin(D3DXToRadian(290))), szurke }, // 59
+		{ float(cos(D3DXToRadian(295))), 0.0f, float(sin(D3DXToRadian(295))), szurke }, // 60
+		{ float(cos(D3DXToRadian(300))), 0.0f, float(sin(D3DXToRadian(300))), szurke }, // 61
+		{ float(cos(D3DXToRadian(305))), 0.0f, float(sin(D3DXToRadian(305))), szurke }, // 62
+		{ float(cos(D3DXToRadian(310))), 0.0f, float(sin(D3DXToRadian(310))), szurke }, // 63
+		{ float(cos(D3DXToRadian(315))), 0.0f, float(sin(D3DXToRadian(315))), szurke }, // 64
+		{ float(cos(D3DXToRadian(320))), 0.0f, float(sin(D3DXToRadian(320))), szurke }, // 65
+		{ float(cos(D3DXToRadian(325))), 0.0f, float(sin(D3DXToRadian(325))), szurke }, // 66
+		{ float(cos(D3DXToRadian(330))), 0.0f, float(sin(D3DXToRadian(330))), szurke }, // 67
+		{ float(cos(D3DXToRadian(335))), 0.0f, float(sin(D3DXToRadian(335))), szurke }, // 68
+		{ float(cos(D3DXToRadian(340))), 0.0f, float(sin(D3DXToRadian(340))), szurke }, // 69
+		{ float(cos(D3DXToRadian(345))), 0.0f, float(sin(D3DXToRadian(345))), szurke }, // 70
+		{ float(cos(D3DXToRadian(350))), 0.0f, float(sin(D3DXToRadian(350))), szurke }, // 71
+		{ float(cos(D3DXToRadian(355))), 0.0f, float(sin(D3DXToRadian(355))), szurke }, // 72
+		{ float(cos(D3DXToRadian(360))), 0.0f, float(sin(D3DXToRadian(360))), szurke } // 73
 	};
 
 	// create a vertex buffer interface called v_buffer
-	d3ddev->CreateVertexBuffer(1 * sizeof(CUSTOMVERTEX),
-		0,
+	d3ddev->CreateVertexBuffer(74 * sizeof(CUSTOMVERTEX),
+		NULL,
 		CUSTOMFVF,
 		D3DPOOL_MANAGED,
 		&v_buffer,
 		NULL);
 
-	VOID* pVoid;    // a void pointer
+	VOID* pVoid; // a void pointer
 
 	// lock v_buffer and load the vertices into it
 	v_buffer->Lock(0, 0, (void**)&pVoid, 0);
-	memcpy(pVoid, vertices, sizeof(vertices));
+	std::memcpy(pVoid, vertices, sizeof(vertices));
 	v_buffer->Unlock();
 }
 
@@ -703,27 +790,6 @@ void init_materials(void)
 	material2.Specular = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
 	material2.Emissive = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
 	material2.Power = 200;
-}
-
-void init_shader(void)
-{
-	SVertex* v_ptr = NULL;
-
-	SVertex triangleList[] =
-	{
-		D3DXVECTOR3(-5.0f, 0.0f, 0.0f),
-		D3DXVECTOR3(0.0f, 5.0f, 0.0f),
-		D3DXVECTOR3(5.0f, 0.0f, 0.0f)
-	};
-
-	//VB készítése shaderhez
-	d3ddev->CreateVertexBuffer(3 * sizeof(SVertex), 0, 0, D3DPOOL_DEFAULT, &shader_vpuffer_ptr, NULL);
-	
-	shader_vpuffer_ptr->Lock(0, sizeof(triangleList), (VOID**)&v_ptr, 0);
-	memcpy(v_ptr, triangleList, sizeof(triangleList));
-	shader_vpuffer_ptr->Unlock();
-
-	return;
 }
 
 void kijelolo(void)
@@ -761,3 +827,5 @@ void kijelolo(void)
 // externek eltávolítása
 // kijelölve vonal rajzol célhoz
 // bolygó pálya rajzol
+// forrás / max forrás
+// esc menu nem futtatja a loopot

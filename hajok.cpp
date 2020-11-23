@@ -1,6 +1,6 @@
 #include "hajok.h"
 
-Hajok::Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, string _birodalom, float _irany_y, string _fajlnev, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel)
+Hajok::Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, int _uzemanyag, int _ar, string _birodalom, float _irany_y, string _fajlnev, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel)
 {
 	_kivalaszt = FALSE;
 	_torol = FALSE;
@@ -18,10 +18,16 @@ Hajok::Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg,
 	this->_nev = _nev;
 	this->_tipus = _tipus;
 	this->_hp = _hp;
+	this->_hp_max = _hp;
 	this->_energia = _energia;
+	this->_energia_max = _energia;
 	this->_sebesseg = _sebesseg;
 	this->_legenyseg = _legenyseg;
+	this->_legenyseg_max = _legenyseg;
 	this->_pajzs = _pajzs;
+	this->_uzemanyag = _uzemanyag;
+	this->_uzemanyag_max = _uzemanyag;
+	this->_ar = _ar;
 	this->_birodalom = _birodalom;
 	this->_irany_y = _irany_y;
 	this->_fajlnev = _fajlnev;
@@ -51,9 +57,13 @@ void Hajok::set_tipus(string _tipus) { this->_tipus = _tipus; }
 
 int Hajok::get_hp() const { return _hp; }
 
+int Hajok::get_hp_max() const { return _hp_max; }
+
 void Hajok::set_hp(int _hp) { this->_hp = _hp; }
 
 int Hajok::get_energia() const { return _energia; }
+
+int Hajok::get_energia_max() const { return _energia_max; }
 
 void Hajok::set_energia(int _energia) { this->_energia = _energia; }
 
@@ -63,11 +73,21 @@ void Hajok::set_sebesseg(float _sebesseg) { this->_sebesseg = _sebesseg; }
 
 int Hajok::get_legenyseg() const { return _legenyseg; }
 
+int Hajok::get_legenyseg_max() const { return _legenyseg_max; }
+
 void Hajok::set_legenyseg(int _legenyseg) { this->_legenyseg = _legenyseg; }
 
 bool Hajok::get_pajzs() const { return _pajzs; }
 
 void Hajok::set_pajzs(bool _pajzs) { this->_pajzs = _pajzs; }
+
+int Hajok::get_uzemanyag() const { return _uzemanyag; }
+
+int Hajok::get_uzemanyag_max() const { return _uzemanyag_max; }
+
+void Hajok::set_uzemanyag(int _uzemanyag) { this->_uzemanyag = _uzemanyag; }
+
+int Hajok::get_ar() const { return _ar; }
 
 string Hajok::get_birodalom() const { return _birodalom; }
 
@@ -349,7 +369,7 @@ Bsphere Hajok::calc_bounding_sphere(ID3DXMesh* _mesh)
 	float _radius = 0.0f;
 
 	BYTE* v = 0;
-	_mesh->LockVertexBuffer(D3DLOCK_READONLY, (void**)&v);
+	_mesh->LockVertexBuffer(0, (void**)&v);
 
 	D3DXComputeBoundingSphere((D3DXVECTOR3*)v, _mesh->GetNumVertices(), D3DXGetFVFVertexSize(_mesh->GetFVF()), &_center, &_radius);
 
@@ -375,7 +395,7 @@ Bbox Hajok::calc_bounding_box(ID3DXMesh* _mesh)
 	_max.z = 0.0f;
 
 	BYTE* v = 0;
-	_mesh->LockVertexBuffer(D3DLOCK_READONLY, (void**)&v);
+	_mesh->LockVertexBuffer(0, (void**)&v);
 
 	D3DXComputeBoundingBox((D3DXVECTOR3*)v, _mesh->GetNumVertices(), D3DXGetFVFVertexSize(_mesh->GetFVF()), &_min, &_max);
 
@@ -462,7 +482,7 @@ void Hajok::mozgas_vonal(void)
 
 void Hajok::mv_render(D3DXMATRIX V, D3DXMATRIX matProjection)
 {
-	if (_sebesseg > 0)
+	if (_sebesseg > 0 && _uzemanyag > 0)
 	{
 		D3DXMATRIX tempFinal = V * matProjection;
 		TheD3D.line->SetWidth(1.5f);
@@ -477,7 +497,7 @@ void Hajok::mv_render(D3DXMATRIX V, D3DXMATRIX matProjection)
 
 void Hajok::cel_render(LPD3DXMESH _mesh)
 {
-	if (_sebesseg > 0)
+	if (_sebesseg > 0 && _uzemanyag > 0)
 	{
 		d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);
 		D3DXMatrixTranslation(&_matTranslate, _cel.x, _cel.y, _cel.z);

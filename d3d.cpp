@@ -8,6 +8,7 @@ D3D::D3D()
 	pontos_ido = NULL;
 	game_datum = NULL;
 	adatok = NULL;
+	penz = NULL;
 
 	for (int i = 0; i < (sizeof(textures) / sizeof(textures[0])); i++)
 	{
@@ -52,7 +53,7 @@ D3D::~D3D()
 
 void D3D::init_D3D(void)
 {
-	HRESULT _hr_szoveg[6];
+	HRESULT _hr_szoveg[7];
 
 	_hr_szoveg[0] = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &player_name);
 	SetRect(&player_rect, 20, 20, 400, 60);
@@ -66,6 +67,8 @@ void D3D::init_D3D(void)
 	SetRect(&game_datum_rect, 20, 140, 200, 200);
 	_hr_szoveg[5] = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &adatok);
 	SetRect(&adatok_rect, screen_width - 220, 180, screen_width - 20, 480);
+	_hr_szoveg[6] = D3DXCreateFont(d3ddev, 20, 10, FW_NORMAL, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, "Times New Roman", &penz);
+	SetRect(&penz_rect, 20, 180, 200, 240);
 
 	for (int i = 0; i < (sizeof(_hr_szoveg) / sizeof(_hr_szoveg[0])); i++)
 	{
@@ -159,6 +162,7 @@ void D3D::cleanup(void)
 	pontos_ido->Release();
 	game_datum->Release();
 	adatok->Release();
+	penz->Release();
 
 	sprite1->Release();
 	menu_hatter_nagy->Release();

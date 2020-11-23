@@ -43,7 +43,7 @@ void Menu::menu_fgv(int screen_width, int screen_height)
 
 	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 520 && clickyPos_lmb < 600)
 	{
-		// settings
+		game_settings = TRUE;
 	}
 
 	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 620 && clickyPos_lmb < 700)
@@ -184,6 +184,38 @@ void Menu::menu_render()
 		TheD3D.gomb_exit->Draw(TheD3D.textures[12], &TheD3D.gomb_exit_rect, NULL, &TheD3D.gomb_exit_pos, feher);
 	}
 	TheD3D.gomb_exit->End();
+
+	return;
+}
+
+void Menu::settings_fgv(int screen_width, int screen_height)
+{
+	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 220 && clickyPos_lmb < 300)
+	{
+		game_pause = FALSE;
+		game_start = FALSE;
+		game_settings = FALSE;
+	}
+
+	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 320 && clickyPos_lmb < 400)
+	{
+		// 2. hely
+	}
+
+	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 420 && clickyPos_lmb < 500)
+	{
+		// 3. hely
+	}
+
+	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 520 && clickyPos_lmb < 600)
+	{
+		// 4. hely
+	}
+
+	if (clickxPos_lmb > screen_width / 2 - 100 && clickxPos_lmb < screen_width / 2 + 100 && clickyPos_lmb > 620 && clickyPos_lmb < 700)
+	{
+		// back gomb
+	}
 
 	return;
 }

@@ -7,16 +7,17 @@ using namespace std;
 
 // definíciók
 #define WS_WINDOW (WS_POPUP)
-#define CUSTOMFVF (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1)
+#define CUSTOMFVF (D3DFVF_XYZ | D3DFVF_DIFFUSE)
 #define PI 3.14159265
-#define SAFE_DELETE(p)       { if (p) { delete (p);     (p)=NULL; } }
-#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p);   (p)=NULL; } }
-#define SAFE_RELEASE(p)      { if (p) { (p)->Release(); (p)=NULL; } }
+#define SAFE_DELETE(p)       { if (p) { delete (p);     (p) = NULL; } }
+#define SAFE_DELETE_ARRAY(p) { if (p) { delete[] (p);   (p) = NULL; } }
+#define SAFE_RELEASE(p)      { if (p) { (p)->Release(); (p) = NULL; } }
 
 // globális változók
 bool game_start = TRUE;
 bool game_over = FALSE;
 bool game_pause = FALSE;
+bool game_settings = FALSE;
 bool kijelolo_negyzet = FALSE;
 
 //képernyõ felbontás és ablak pozíció
@@ -100,6 +101,9 @@ string p_nev = "Tom";
 string p_birodalom = "Ember";
 string ido = "00:00:00";
 string datum = "2255. 01. 01.";
+string penz = "1500 €";
+
+int osszpenz = 1500;
 
 // debug / settings
 bool frissit_azonnal = TRUE; // 1000+ FPS

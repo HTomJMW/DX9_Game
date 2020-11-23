@@ -26,6 +26,8 @@ class D3D
 		RECT game_datum_rect;
 		ID3DXFont *adatok;
 		RECT adatok_rect;
+		ID3DXFont *penz;
+		RECT penz_rect;
 
 		IDirect3DTexture9 *textures[25];
 

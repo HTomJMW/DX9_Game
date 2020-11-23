@@ -33,7 +33,7 @@ extern float tavmeres(D3DXVECTOR3, D3DXVECTOR3);
 class Hajok
 {
 	public:
-		Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, string _birodalom, float _irany_y, string _fajlnev, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel);
+		Hajok(string _nev, string _tipus, int _hp, int _energia, float _sebesseg, int _legenyseg, bool _pajzs, int _uzemanyag, int _ar, string _birodalom, float _irany_y, string _fajlnev, const LPD3DXMESH &_mesh, D3DXVECTOR3 _pos, D3DXVECTOR3 _cel);
 		~Hajok();
 
 		string get_nev() const;
@@ -41,15 +41,22 @@ class Hajok
 		string get_tipus() const;
 		void set_tipus(string _tipus);
 		int get_hp() const;
+		int get_hp_max() const;
 		void set_hp(int _hp);
 		int get_energia() const;
+		int get_energia_max() const;
 		void set_energia(int _energia);
 		float get_sebesseg() const;
 		void set_sebesseg(float _sebesseg);
 		int get_legenyseg() const;
+		int get_legenyseg_max() const;
 		void set_legenyseg(int _legenyseg);
 		bool get_pajzs() const;
 		void set_pajzs(bool _pajzs);
+		int get_uzemanyag() const;
+		int get_uzemanyag_max() const;
+		void  set_uzemanyag(int _uzemanyag);
+		int get_ar() const;
 		string get_birodalom() const;
 		void set_birodalom(string _birodalom);
 		float get_irany_y() const;
@@ -96,10 +103,17 @@ class Hajok
 		string _nev;
 		string _tipus;
 		int _hp;
+		int _hp_max;
 		int _energia;
+		int _energia_max;
 		float _sebesseg;
+		float _sebesseg_max;
 		int _legenyseg;
+		int _legenyseg_max;
 		bool _pajzs;
+		int _uzemanyag;
+		int _uzemanyag_max;
+		int _ar;
 		string _birodalom;
 		float _irany_y;
 		bool _kivalaszt;

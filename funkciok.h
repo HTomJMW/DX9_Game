@@ -38,6 +38,8 @@ extern int ev;
 extern int honap;
 extern int nap;
 extern string datum;
+extern string penz;
+extern int osszpenz;
 
 class Funkciok
 {
@@ -57,9 +59,12 @@ class Funkciok
 		void kering(void);
 		float tavmeres(D3DXVECTOR3, D3DXVECTOR3);
 		void datum_ingame(void);
+		void ado(void);
+		int nepesseg(void);
 
 	private:
 		int _torol;
-		int _kezdet = 0;
-		int _vege = 0;
+		int _kezdet;
+		int _vege;
+		int _nepesseg;
 };

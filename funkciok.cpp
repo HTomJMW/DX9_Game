@@ -3,6 +3,9 @@
 Funkciok::Funkciok()
 {
 	_torol = -1;
+	_kezdet = 0;
+	_vege = 0;
+	_nepesseg = 0;
 }
 
 Funkciok::~Funkciok()
@@ -51,7 +54,7 @@ void Funkciok::uj_hajo(void)
 	float _yy = rand() % 50 + 620;
 	float _zz = rand() % 50 + 620;
 	string _n = "NS_" + to_string(_sz);
-	Hajok uj_hajo = { _n, "Ûrhajó", 2000, 500, 15.0f, 250, FALSE, "Ember", 0.0f, "Models/flagship_3.X", TheMesh.static_meshes[4], D3DXVECTOR3(_xx, _yy, _zz), D3DXVECTOR3(_xx, _yy, _zz) };
+	Hajok uj_hajo = { _n, "Ûrhajó", 2000, 500, 15.0f, 250, FALSE, 750, 30000, "Ember", 0.0f, "Models/flagship_3.X", TheMesh.static_meshes[4], D3DXVECTOR3(_xx, _yy, _zz), D3DXVECTOR3(_xx, _yy, _zz) };
 	hajok_vec.push_back(uj_hajo);
 
 	return;
@@ -127,12 +130,17 @@ string Funkciok::adatkiiro()
 			string _nev = hajok_vec[i].get_nev();
 			string _tipus = hajok_vec[i].get_tipus();
 			string _hp = to_string(hajok_vec[i].get_hp());
+			string _hp_max = to_string(hajok_vec[i].get_hp_max());
 			string _energia = to_string(hajok_vec[i].get_energia());
+			string _energia_max = to_string(hajok_vec[i].get_energia_max());
+			string _uzemanyag = to_string(hajok_vec[i].get_uzemanyag());
+			string _uzemanyag_max = to_string(hajok_vec[i].get_uzemanyag_max());
 			string _legenyseg = to_string(hajok_vec[i].get_legenyseg());
+			string _legenyseg_max = to_string(hajok_vec[i].get_legenyseg_max());
 			string _pajzs;
 			if (hajok_vec[i].get_pajzs()) { _pajzs = "Van"; } else { _pajzs = "Nincs"; }
 			string _birodalom = hajok_vec[i].get_birodalom();
-			_str = "Név: " + _nev + "\n" + "Típus: " + _tipus + "\n" + "HP: " + _hp + "\n" + "Energia: " + _energia + "\n" + "Legénység: " + _legenyseg + "\n" + "Pajzs: " + _pajzs + "\n" + "Birodalom: " + _birodalom;
+			_str = "Név: " + _nev + "\n" + "Típus: " + _tipus + "\n" + "HP: " + _hp + "/" + _hp_max + "\n" + "Energia: " + _energia + "/" + _energia_max + "\n" + "Üzemanyag: " + _uzemanyag + "/" + _uzemanyag_max + "\n" + "Legénység: " + _legenyseg + "/" + _legenyseg_max + "\n" + "Pajzs: " + _pajzs + "\n" + "Birodalom: " + _birodalom;
 			break;
 		}
 	}
@@ -237,7 +245,7 @@ void Funkciok::datum_ingame(void)
 	{
 		if (!game_pause && !game_start)
 		{
-			if (nap > 30) { nap = 1; honap++; }
+			if (nap > 30) { nap = 1; honap++; osszpenz = osszpenz + (nepesseg() * 2); ado(); }
 			if (nap < 10) { _nap = "0" + to_string(nap); }
 			else { _nap = to_string(nap); }
 			if (honap > 12) { honap = 1; ev++; }
@@ -255,4 +263,27 @@ void Funkciok::datum_ingame(void)
 	}
 
 	return;
+}
+
+void Funkciok::ado(void)
+{
+	penz = to_string(osszpenz) + " €";
+
+	return;
+}
+
+int Funkciok::nepesseg(void)
+{
+	_nepesseg = 0;
+
+	for (size_t i = 0; i < bolygok_vec.size(); i++)
+	{
+		if (bolygok_vec[i].get_birodalom() == "Ember") { _nepesseg = _nepesseg + bolygok_vec[i].get_nepesseg(); }
+	}
+	for (size_t j = 0; j < holdak_vec.size(); j++)
+	{
+		if (holdak_vec[j].get_birodalom() == "Ember") { _nepesseg = _nepesseg + holdak_vec[j].get_nepesseg(); }
+	}
+
+	return _nepesseg;
 }

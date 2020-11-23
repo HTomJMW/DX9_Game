@@ -15,9 +15,7 @@ struct CUSTOMVERTEX
 	FLOAT X;
 	FLOAT Y;
 	FLOAT Z;
-	D3DVECTOR NORMAL; // vertex normál
-	FLOAT tu; // textúra coordináta
-	FLOAT tv; // textúra coordináta
+	DWORD COLOR;
 };
 
 // bounding box
@@ -32,12 +30,6 @@ struct Bsphere
 {
 	D3DXVECTOR3 _center;
 	float _radius;
-};
-
-// shader vertex formátum
-struct SVertex
-{
-	D3DXVECTOR3 pos;
 };
 
 // .vaw audio

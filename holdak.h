@@ -40,6 +40,8 @@ class Holdak
 
 		void render(void);
 
+		void cleanup(void);
+
 	private:
 		string _nev;
 		string _tipus;
